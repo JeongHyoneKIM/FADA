@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 소모임 과제 관리 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --surface2: #222;
+  --surface3: #2a2a2a;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0f0f0;
+  --text2: #999;
+  --text3: #555;
+  --accent: #7c6af7;
+  --accent2: #a89cf7;
+  --green: #4ade80;
+  --green-bg: rgba(74,222,128,0.1);
+  --amber: #fbbf24;
+  --amber-bg: rgba(251,191,36,0.1);
+  --red: #f87171;
+  --red-bg: rgba(248,113,113,0.1);
+  --blue: #60a5fa;
+  --blue-bg: rgba(96,165,250,0.08);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --sidebar-w: 220px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Pretendard', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+/* ─── Sidebar ─── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 100;
+  transition: width 0.2s ease, min-width 0.2s ease;
+}
+
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar-logo .logo-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-logo .logo-text {
+  font-size: 13px; font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+}
+.sidebar-logo .logo-text span { color: var(--text2); font-weight: 400; font-size: 11px; }
+
+nav { flex: 1; padding: 10px 0; overflow-y: auto; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px;
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 13.5px; font-weight: 500;
+  border-radius: 0;
+  transition: all 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: rgba(124,106,247,0.12); color: var(--accent2); }
+.nav-item .nav-icon { font-size: 16px; flex-shrink: 0; }
+
+.sidebar-bottom {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.conn-status {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12px; color: var(--text2);
+  white-space: nowrap;
+}
+.conn-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+}
+.conn-dot.online { background: var(--green); }
+
+.btn-reset {
+  background: none; border: 1px solid var(--border2);
+  color: var(--text2); font-size: 11.5px;
+  padding: 6px 10px; border-radius: var(--radius-sm);
+  cursor: pointer; white-space: nowrap;
+  transition: all 0.15s;
+}
+.btn-reset:hover { border-color: var(--accent); color: var(--accent2); }
+
+/* ─── Main ─── */
+#main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  overflow-y: auto;
+  height: 100vh;
+  transition: margin-left 0.2s ease;
+}
+
+.page { display: none; padding: 32px 36px; }
+.page.active { display: block; }
+
+.page-header {
+  margin-bottom: 28px;
+}
+.page-header h1 { font-size: 22px; font-weight: 600; }
+.page-header p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+/* ─── Buttons ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.btn:hover { background: var(--surface3); border-color: var(--border2); }
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: #6b5ce0; border-color: #6b5ce0; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-danger { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: rgba(248,113,113,0.2); }
+
+/* ─── Badge ─── */
+.badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11.5px; font-weight: 500;
+  font-family: 'DM Mono', monospace;
+}
+.badge-done { background: var(--green-bg); color: var(--green); }
+.badge-pending { background: var(--amber-bg); color: var(--amber); }
+.badge-none { background: var(--surface3); color: var(--text3); }
+.badge-accent { background: rgba(124,106,247,0.15); color: var(--accent2); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+
+/* ─── Progress ─── */
+.progress-bar {
+  width: 100%; height: 6px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+.progress-fill.green { background: var(--green); }
+.progress-fill.amber { background: var(--amber); }
+
+/* ─── Input ─── */
+.form-row {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
+.form-group label { font-size: 12px; color: var(--text2); }
+input, select, textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+select option { background: var(--surface2); }
+textarea { resize: vertical; min-height: 80px; }
+
+/* ─── Card ─── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+/* ─── Stat Cards ─── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.stat-label { font-size: 12px; color: var(--text2); }
+.stat-value { font-size: 28px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); }
+.stat-value span { font-size: 14px; color: var(--text2); font-family: 'Pretendard', sans-serif; }
+
+/* ─── Dashboard grids ─── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.section-title {
+  font-size: 14px; font-weight: 600;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ─── Table ─── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border2);
+  color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  white-space: nowrap;
+}
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+
+/* ─── Member Card ─── */
+.member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+.member-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.member-card:hover { border-color: var(--border2); }
+.member-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 600;
+  margin-bottom: 10px;
+}
+.member-name { font-size: 14px; font-weight: 600; }
+.member-role { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.member-email { font-size: 11px; color: var(--text3); margin-top: 4px; font-family: 'DM Mono', monospace; }
+.member-stat { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.member-stat-label { font-size: 11px; color: var(--text2); display: flex; justify-content: space-between; }
+.card-del {
+  position: absolute; top: 12px; right: 12px;
+  background: none; border: none;
+  color: var(--text3); cursor: pointer; font-size: 15px;
+  padding: 2px 5px; border-radius: 4px;
+  transition: all 0.15s;
+  line-height: 1;
+}
+.card-del:hover { color: var(--red); background: var(--red-bg); }
+
+/* ─── Matrix ─── */
+.matrix-cell {
+  width: 56px; height: 36px;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s;
+  user-select: none;
+  font-size: 14px;
+}
+.matrix-cell:hover { background: var(--surface3) !important; }
+.matrix-cell.done { background: var(--green-bg) !important; color: var(--green); }
+.matrix-cell.empty { color: var(--text3); }
+
+/* ─── Memo Card ─── */
+.memo-list { display: flex; flex-direction: column; gap: 12px; }
+.memo-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  position: relative;
+}
+.memo-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.memo-title { font-size: 14px; font-weight: 600; }
+.memo-content { font-size: 13px; color: var(--text2); line-height: 1.6; white-space: pre-wrap; }
+.memo-date { font-size: 11px; color: var(--text3); margin-top: 8px; font-family: 'DM Mono', monospace; }
+
+/* ─── Setup Overlay ─── */
+#setup-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(6px);
+}
+.setup-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 36px;
+  width: 460px;
+  max-width: 92vw;
+}
+.setup-box h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+.setup-box p { color: var(--text2); font-size: 13px; line-height: 1.6; margin-bottom: 24px; }
+.setup-hint { background: var(--blue-bg); border: 1px solid rgba(96,165,250,0.2); border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 14px; font-size: 12px; color: var(--blue); }
+
+/* ─── Toast ─── */
+#toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text);
+  animation: toastIn 0.25s ease;
+  pointer-events: none;
+}
+.toast.success { border-left: 3px solid var(--green); }
+.toast.error { border-left: 3px solid var(--red); }
+.toast.info { border-left: 3px solid var(--accent); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ─── Spinner ─── */
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--surface3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Empty state ─── */
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+}
+
+/* ─── Form section ─── */
+.form-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 56px; }
+  .sidebar-logo .logo-text,
+  .nav-item .nav-label,
+  .sidebar-bottom .btn-reset,
+  .conn-status span { display: none; }
+  .sidebar-logo { justify-content: center; padding: 14px; }
+  .nav-item { justify-content: center; padding: 12px; }
+  .sidebar-bottom { align-items: center; }
+  .conn-status { justify-content: center; }
+  .page { padding: 20px 16px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .dash-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr; }
+}
+
+.text-over-due { color: var(--red) !important; }
+.inline-flex { display: inline-flex; align-items: center; gap: 6px; }
+.gap-8 { gap: 8px; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; }
+.w100 { width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- Setup Overlay -->
+<div id="setup-overlay">
+  <div class="setup-box">
+    <h2>🔥 Firebase 연결 설정</h2>
+    <p>AI 소모임 과제 관리 대시보드를 사용하려면<br>Firebase Realtime Database URL을 입력해주세요.</p>
+    <div class="form-group">
+      <label>Firebase Database URL</label>
+      <input type="url" id="fb-url-input" placeholder="https://your-project-default-rtdb.firebaseio.com" />
+    </div>
+    <div class="setup-hint">
+      💡 Firebase Console → Realtime Database → 데이터 탭에서 URL을 확인하세요.<br>
+      형식: <code>https://[프로젝트ID]-default-rtdb.firebaseio.com</code>
+    </div>
+    <div style="margin-top:20px; display:flex; gap:10px; align-items:center;">
+      <button class="btn btn-primary" id="btn-connect">연결하기</button>
+      <span id="setup-spinner" style="display:none;"><span class="spinner"></span></span>
+      <span id="setup-error" style="color:var(--red); font-size:12px;"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🤖</div>
+    <div class="logo-text">AI 소모임<br><span>과제 관리 대시보드</span></div>
+  </div>
+  <nav>
+    <div class="nav-item active" data-page="dashboard">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">대시보드</span>
+    </div>
+    <div class="nav-item" data-page="members">
+      <span class="nav-icon">👥</span>
+      <span class="nav-label">멤버 관리</span>
+    </div>
+    <div class="nav-item" data-page="tasks">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">과제 목록</span>
+    </div>
+    <div class="nav-item" data-page="submissions">
+      <span class="nav-icon">✅</span>
+      <span class="nav-label">제출 현황</span>
+    </div>
+    <div class="nav-item" data-page="memos">
+      <span class="nav-icon">📌</span>
+      <span class="nav-label">메모·공지</span>
+    </div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="conn-status">
+      <div class="conn-dot" id="conn-dot"></div>
+      <span id="conn-text">연결 안됨</span>
+    </div>
+    <button class="btn-reset" id="btn-reset-url">⚙ URL 재설정</button>
+  </div>
+</aside>
+
+<!-- Main -->
+<main id="main">
+
+  <!-- Dashboard -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <h1>대시보드</h1>
+      <p>AI 소모임 과제 현황을 한눈에 확인하세요</p>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">전체 제출률</div>
+        <div class="stat-value" id="stat-rate">—<span>%</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">참여 멤버</div>
+        <div class="stat-value" id="stat-members">0<span>명</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">등록 과제</div>
+        <div class="stat-value" id="stat-tasks">0<span>개</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">총 제출 수</div>
+        <div class="stat-value" id="stat-subs">0<span>건</span></div>
+      </div>
+    </div>
+    <div class="dash-grid">
+      <div class="card">
+        <div class="section-title">최근 제출 현황</div>
+        <div id="dash-recent"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">멤버별 달성률</div>
+        <div id="dash-member-rates"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">과제별 제출률</div>
+      <div id="dash-task-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;"></div>
+    </div>
+  </div>
+
+  <!-- Members -->
+  <div class="page" id="page-members">
+    <div class="page-header">
+      <h1>멤버 관리</h1>
+      <p>소모임 멤버를 추가하고 관리합니다</p>
+    </div>
+    <div class="form-section">
+      <div class="form-row">
+        <div class="form-group">
+          <label>이름 *</label>
+          <input type="text" id="m-name" placeholder="홍길동">
+        </div>
+        <div class="form-group">
+          <label>부서 / 역할</label>
+          <input type="text" id="m-role" placeholder="개발팀 / AI 엔지니어">
+        </div>
+        <div class="form-group">
+          <label>이메일</label>
+          <input type="email" id="m-email" placeholder="example@email.com">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-add-member">+ 멤버 추가</button>
+    </div>
+    <div id="member-grid" class="member-grid"></div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="page" id="page-tasks">
+    <div class="page-header">
+      <h1>과제 목록</h1>
+      <p>주차별 과제를 등록하고 관리합니다</p>
+    </div>
+    <div class="form-section">
+      <div class="form-row">
+        <div class="form-group">
+          <label>과제명 *</label>
+          <input type="text" id="t-name" placeholder="프롬프트 엔지니어링 실습">
+        </div>
+        <div class="form-group" style="max-width:120px;">
+          <label>회차</label>
+          <input type="text" id="t-week" placeholder="Vol.01">
+        </div>
+        <div class="form-group" style="max-width:140px;">
+          <label>도구</label>
+          <input type="text" id="t-tool" placeholder="ChatGPT, Claude...">
+        </div>
+        <div class="form-group" style="max-width:160px;">
+          <label>마감일</label>
+          <input type="date" id="t-due">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>설명</label>
+          <textarea id="t-desc" placeholder="과제 설명을 입력하세요..." style="min-height:60px;"></textarea>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-add-task">+ 과제 추가</button>
+    </div>
+    <div class="card table-wrap">
+      <table id="task-table">
+        <thead>
+          <tr>
+            <th>회차</th>
+            <th>과제명</th>
+            <th>도구</th>
+            <th>마감일</th>
+            <th style="width:160px;">제출률</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="task-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Submissions -->
+  <div class="page" id="page-submissions">
+    <div class="page-header">
+      <h1>제출 현황</h1>
+      <p>과제 제출을 기록하고 매트릭스로 확인합니다</p>
+    </div>
+    <div class="form-section">
+      <div class="form-row">
+        <div class="form-group">
+          <label>멤버</label>
+          <select id="s-member"></select>
+        </div>
+        <div class="form-group">
+          <label>과제</label>
+          <select id="s-task"></select>
+        </div>
+        <div class="form-group" style="max-width:160px;">
+          <label>제출 방법</label>
+          <select id="s-method">
+            <option value="파일">파일</option>
+            <option value="캡처">캡처</option>
+            <option value="링크">링크</option>
+            <option value="구두">구두</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>메모</label>
+          <input type="text" id="s-note" placeholder="추가 메모 (선택)">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" id="btn-submit">제출 처리</button>
+        <button class="btn btn-danger" id="btn-cancel-sub">제출 취소</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="section-title">제출 매트릭스</div>
+      <div class="table-wrap" id="matrix-wrap"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">제출 상세 로그</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>멤버</th>
+              <th>과제</th>
+              <th>방법</th>
+              <th>일시</th>
+              <th>메모</th>
+            </tr>
+          </thead>
+          <tbody id="sub-log-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Memos -->
+  <div class="page" id="page-memos">
+    <div class="page-header">
+      <h1>메모·공지</h1>
+      <p>소모임 공지사항과 회의록을 관리합니다</p>
+    </div>
+    <div class="form-section">
+      <div class="form-row">
+        <div class="form-group" style="max-width:160px;">
+          <label>태그</label>
+          <select id="memo-tag">
+            <option value="📢 공지">📢 공지</option>
+            <option value="📝 회의록">📝 회의록</option>
+            <option value="💬 피드백">💬 피드백</option>
+            <option value="💡 아이디어">💡 아이디어</option>
+            <option value="📌 기타">📌 기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>제목 *</label>
+          <input type="text" id="memo-title" placeholder="제목을 입력하세요">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>내용</label>
+          <textarea id="memo-content" placeholder="내용을 입력하세요..." style="min-height:100px;"></textarea>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-add-memo">저장</button>
+    </div>
+    <div id="memo-list" class="memo-list"></div>
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+<script>
+// ─── State ───────────────────────────────────────────
+const state = {
+  members: {},
+  tasks: {},
+  submissions: {},
+  memos: {},
+};
+
+let db = null;
+let listeners = [];
+
+const AVATAR_COLORS = [
+  ['#7c6af7','rgba(124,106,247,0.2)'],
+  ['#4ade80','rgba(74,222,128,0.15)'],
+  ['#fbbf24','rgba(251,191,36,0.15)'],
+  ['#f87171','rgba(248,113,113,0.15)'],
+  ['#60a5fa','rgba(96,165,250,0.15)'],
+  ['#f472b6','rgba(244,114,182,0.15)'],
+  ['#34d399','rgba(52,211,153,0.15)'],
+  ['#fb923c','rgba(251,146,60,0.15)'],
+  ['#a78bfa','rgba(167,139,250,0.15)'],
+  ['#38bdf8','rgba(56,189,248,0.15)'],
+];
+
+// ─── Toast ───────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 2400);
+}
+
+// ─── Navigation ──────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('page-' + item.dataset.page).classList.add('active');
+  });
+});
+
+// ─── Firebase Setup ───────────────────────────────────
+const overlay = document.getElementById('setup-overlay');
+const fbUrlInput = document.getElementById('fb-url-input');
+const setupError = document.getElementById('setup-error');
+const setupSpinner = document.getElementById('setup-spinner');
+
+function showSetup() {
+  overlay.style.display = 'flex';
+  fbUrlInput.value = '';
+  setupError.textContent = '';
+}
+
+function hideSetup() {
+  overlay.style.display = 'none';
+}
+
+document.getElementById('btn-connect').addEventListener('click', tryConnect);
+fbUrlInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryConnect(); });
+
+document.getElementById('btn-reset-url').addEventListener('click', () => {
+  localStorage.removeItem('ai_hub_firebase_url');
+  if (db) {
+    listeners.forEach(l => l.ref.off('value', l.fn));
+    listeners = [];
+    db = null;
+  }
+  setConnStatus(false);
+  showSetup();
+});
+
+async function tryConnect() {
+  const url = fbUrlInput.value.trim();
+  if (!url) { setupError.textContent = 'URL을 입력해주세요.'; return; }
+  if (!url.includes('firebaseio.com')) {
+    setupError.textContent = 'Firebase Database URL 형식이 올바르지 않습니다.';
+    return;
+  }
+  setupError.textContent = '';
+  setupSpinner.style.display = 'inline-block';
+  try {
+    await initFirebase(url);
+    localStorage.setItem('ai_hub_firebase_url', url);
+    hideSetup();
+    toast('Firebase 연결 성공!', 'success');
+  } catch (e) {
+    setupError.textContent = '연결 실패: ' + e.message;
+  } finally {
+    setupSpinner.style.display = 'none';
+  }
+}
+
+function initFirebase(url) {
+  return new Promise((resolve, reject) => {
+    try {
+      const existing = firebase.apps.length ? firebase.apps[0] : null;
+      if (existing) {
+        try { existing.delete(); } catch(e) {}
+      }
+      const app = firebase.initializeApp({ databaseURL: url }, 'app_' + Date.now());
+      db = firebase.database(app);
+      setupListeners(resolve, reject);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function setupListeners(resolve, reject) {
+  const keys = ['members','tasks','submissions','memos'];
+  let resolved = false;
+
+  const connRef = db.ref('.info/connected');
+  connRef.on('value', snap => {
+    const online = !!snap.val();
+    setConnStatus(online);
+    if (!resolved) {
+      resolved = true;
+      if (online) resolve();
+      else reject(new Error('데이터베이스에 연결할 수 없습니다.'));
+    }
+  });
+  listeners.push({ ref: connRef, fn: null });
+
+  keys.forEach(key => {
+    const ref = db.ref(key);
+    const fn = ref.on('value', snap => {
+      state[key] = snap.val() || {};
+      renderAll();
+    }, err => {
+      toast('데이터 로드 오류: ' + err.message, 'error');
+    });
+    listeners.push({ ref, fn });
+  });
+
+  setTimeout(() => {
+    if (!resolved) {
+      resolved = true;
+      reject(new Error('연결 시간 초과'));
+    }
+  }, 8000);
+}
+
+function setConnStatus(online) {
+  document.getElementById('conn-dot').className = 'conn-dot' + (online ? ' online' : '');
+  document.getElementById('conn-text').textContent = online ? 'Firebase 연결됨' : '연결 끊김';
+}
+
+// ─── Render All ───────────────────────────────────────
+function renderAll() {
+  renderDashboard();
+  renderMembers();
+  renderTasks();
+  renderSubmissions();
+  renderMemos();
+}
+
+// ─── Helpers ─────────────────────────────────────────
+function memberList() { return Object.values(state.members).sort((a,b) => a.joinedAt - b.joinedAt); }
+function taskList() { return Object.values(state.tasks).sort((a,b) => a.createdAt - b.createdAt); }
+function subList() { return Object.values(state.submissions).sort((a,b) => b.submittedAt - a.submittedAt); }
+function memoList_() { return Object.values(state.memos).sort((a,b) => b.createdAt - a.createdAt); }
+
+function memberName(id) { return state.members[id] ? state.members[id].name : '—'; }
+function taskName(id) { return state.tasks[id] ? state.tasks[id].name : '—'; }
+
+function getSubmission(memberId, taskId) {
+  return Object.values(state.submissions).find(s => s.memberId === memberId && s.taskId === taskId);
+}
+
+function calcRate(memberId) {
+  const tasks = taskList();
+  if (!tasks.length) return 0;
+  const done = tasks.filter(t => getSubmission(memberId, t.id)).length;
+  return Math.round(done / tasks.length * 100);
+}
+
+function calcTaskRate(taskId) {
+  const members = memberList();
+  if (!members.length) return 0;
+  const done = members.filter(m => getSubmission(m.id, taskId)).length;
+  return Math.round(done / members.length * 100);
+}
+
+function avatar(member) {
+  const ci = member.colorIdx % AVATAR_COLORS.length;
+  const [fg, bg] = AVATAR_COLORS[ci];
+  const initials = member.name.slice(0, 2);
+  return `<div class="member-avatar" style="background:${bg};color:${fg};">${initials}</div>`;
+}
+
+function progressColor(pct) {
+  if (pct >= 80) return 'green';
+  if (pct >= 40) return 'amber';
+  return '';
+}
+
+function formatDate(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+function formatDue(dateStr) {
+  if (!dateStr) return '—';
+  const [y,m,d] = dateStr.split('-');
+  return `${y}.${m}.${d}`;
+}
+
+function isOverDue(dateStr) {
+  if (!dateStr) return false;
+  return new Date(dateStr) < new Date(new Date().toDateString());
+}
+
+// ─── Dashboard ───────────────────────────────────────
+function renderDashboard() {
+  const members = memberList();
+  const tasks = taskList();
+  const subs = subList();
+
+  const total = members.length * tasks.length;
+  const done = subs.length;
+  const rate = total > 0 ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('stat-rate').innerHTML = `${rate}<span>%</span>`;
+  document.getElementById('stat-members').innerHTML = `${members.length}<span>명</span>`;
+  document.getElementById('stat-tasks').innerHTML = `${tasks.length}<span>개</span>`;
+  document.getElementById('stat-subs').innerHTML = `${done}<span>건</span>`;
+
+  // Recent
+  const recent = subs.slice(0, 5);
+  const recentEl = document.getElementById('dash-recent');
+  if (!recent.length) {
+    recentEl.innerHTML = '<div class="empty">제출 내역이 없습니다</div>';
+  } else {
+    recentEl.innerHTML = `<table style="width:100%;font-size:13px;">
+      ${recent.map(s => `<tr>
+        <td style="padding:7px 4px;">${memberName(s.memberId)}</td>
+        <td style="padding:7px 4px;color:var(--text2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${taskName(s.taskId)}</td>
+        <td style="padding:7px 4px;text-align:right;"><span class="badge badge-done">${s.method}</span></td>
+      </tr>`).join('')}
+    </table>`;
+  }
+
+  // Member rates
+  const mrEl = document.getElementById('dash-member-rates');
+  if (!members.length) {
+    mrEl.innerHTML = '<div class="empty">멤버가 없습니다</div>';
+  } else {
+    mrEl.innerHTML = members.map(m => {
+      const r = calcRate(m.id);
+      const col = progressColor(r);
+      return `<div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
+          <span>${m.name}</span>
+          <span style="color:var(--text2);font-family:'DM Mono',monospace;">${r}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${col}" style="width:${r}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Task grid
+  const tgEl = document.getElementById('dash-task-grid');
+  if (!tasks.length) {
+    tgEl.innerHTML = '<div class="empty" style="grid-column:1/-1;">과제가 없습니다</div>';
+  } else {
+    tgEl.innerHTML = tasks.map(t => {
+      const r = calcTaskRate(t.id);
+      const col = progressColor(r);
+      return `<div class="card" style="padding:14px;">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px;">${t.week || '—'}</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.name}</div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:5px;">
+          <span>제출률</span><span style="font-family:'DM Mono',monospace;">${r}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${col}" style="width:${r}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ─── Members ─────────────────────────────────────────
+document.getElementById('btn-add-member').addEventListener('click', addMember);
+async function addMember() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { toast('이름을 입력해주세요.', 'error'); return; }
+  if (!db) { toast('Firebase가 연결되지 않았습니다.', 'error'); return; }
+  const id = 'm_' + Date.now();
+  const colorIdx = memberList().length % AVATAR_COLORS.length;
+  await db.ref('members/' + id).set({
+    id, name,
+    role: document.getElementById('m-role').value.trim(),
+    email: document.getElementById('m-email').value.trim(),
+    colorIdx,
+    joinedAt: Date.now()
+  });
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-role').value = '';
+  document.getElementById('m-email').value = '';
+  toast(`${name} 멤버가 추가되었습니다.`, 'success');
+}
+
+function renderMembers() {
+  const members = memberList();
+  const el = document.getElementById('member-grid');
+  if (!members.length) {
+    el.innerHTML = '<div class="empty" style="width:100%;">등록된 멤버가 없습니다</div>';
+    return;
+  }
+  const tasks = taskList();
+  el.innerHTML = members.map(m => {
+    const r = calcRate(m.id);
+    const col = progressColor(r);
+    const doneCount = tasks.filter(t => getSubmission(m.id, t.id)).length;
+    return `<div class="member-card">
+      <button class="card-del" onclick="deleteMember('${m.id}')">✕</button>
+      ${avatar(m)}
+      <div class="member-name">${m.name}</div>
+      ${m.role ? `<div class="member-role">${m.role}</div>` : ''}
+      ${m.email ? `<div class="member-email">${m.email}</div>` : ''}
+      <div class="member-stat">
+        <div class="member-stat-label">
+          <span>달성률</span>
+          <span style="font-family:'DM Mono',monospace;">${doneCount}/${tasks.length} (${r}%)</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${col}" style="width:${r}%"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteMember(id) {
+  if (!confirm('멤버를 삭제하면 관련 제출 내역도 삭제됩니다. 계속하시겠습니까?')) return;
+  const name = state.members[id]?.name;
+  await db.ref('members/' + id).remove();
+  const relatedSubs = Object.values(state.submissions).filter(s => s.memberId === id);
+  for (const s of relatedSubs) await db.ref('submissions/' + s.id).remove();
+  toast(`${name} 멤버가 삭제되었습니다.`, 'info');
+}
+
+// ─── Tasks ───────────────────────────────────────────
+document.getElementById('btn-add-task').addEventListener('click', addTask);
+async function addTask() {
+  const name = document.getElementById('t-name').value.trim();
+  if (!name) { toast('과제명을 입력해주세요.', 'error'); return; }
+  if (!db) { toast('Firebase가 연결되지 않았습니다.', 'error'); return; }
+  const id = 't_' + Date.now();
+  await db.ref('tasks/' + id).set({
+    id, name,
+    week: document.getElementById('t-week').value.trim(),
+    tool: document.getElementById('t-tool').value.trim(),
+    due: document.getElementById('t-due').value,
+    desc: document.getElementById('t-desc').value.trim(),
+    createdAt: Date.now()
+  });
+  document.getElementById('t-name').value = '';
+  document.getElementById('t-week').value = '';
+  document.getElementById('t-tool').value = '';
+  document.getElementById('t-due').value = '';
+  document.getElementById('t-desc').value = '';
+  toast(`과제 "${name}"이 추가되었습니다.`, 'success');
+}
+
+function renderTasks() {
+  const tasks = taskList();
+  const tbody = document.getElementById('task-tbody');
+  if (!tasks.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">등록된 과제가 없습니다</td></tr>';
+    return;
+  }
+  tbody.innerHTML = tasks.map(t => {
+    const r = calcTaskRate(t.id);
+    const col = progressColor(r);
+    const over = isOverDue(t.due);
+    return `<tr>
+      <td><span class="badge badge-accent">${t.week || '—'}</span></td>
+      <td style="font-weight:500;">${t.name}${t.desc ? `<div style="font-size:11px;color:var(--text3);margin-top:2px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.desc}</div>` : ''}</td>
+      <td style="color:var(--text2);font-size:12px;">${t.tool || '—'}</td>
+      <td class="${over ? 'text-over-due' : ''}" style="font-family:'DM Mono',monospace;font-size:12px;">${formatDue(t.due)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="progress-bar" style="flex:1;"><div class="progress-fill ${col}" style="width:${r}%"></div></div>
+          <span style="font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;min-width:32px;text-align:right;">${r}%</span>
+        </div>
+      </td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">삭제</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function deleteTask(id) {
+  if (!confirm('과제를 삭제하면 관련 제출 내역도 삭제됩니다. 계속하시겠습니까?')) return;
+  const name = state.tasks[id]?.name;
+  await db.ref('tasks/' + id).remove();
+  const relatedSubs = Object.values(state.submissions).filter(s => s.taskId === id);
+  for (const s of relatedSubs) await db.ref('submissions/' + s.id).remove();
+  toast(`과제 "${name}"이 삭제되었습니다.`, 'info');
+}
+
+// ─── Submissions ─────────────────────────────────────
+function populateSubmissionSelects() {
+  const members = memberList();
+  const tasks = taskList();
+  const mSel = document.getElementById('s-member');
+  const tSel = document.getElementById('s-task');
+  const prevM = mSel.value;
+  const prevT = tSel.value;
+  mSel.innerHTML = members.length
+    ? members.map(m => `<option value="${m.id}">${m.name}</option>`).join('')
+    : '<option value="">— 멤버 없음 —</option>';
+  tSel.innerHTML = tasks.length
+    ? tasks.map(t => `<option value="${t.id}">${t.week ? `[${t.week}] ` : ''}${t.name}</option>`).join('')
+    : '<option value="">— 과제 없음 —</option>';
+  if (prevM) mSel.value = prevM;
+  if (prevT) tSel.value = prevT;
+}
+
+document.getElementById('btn-submit').addEventListener('click', async () => {
+  const memberId = document.getElementById('s-member').value;
+  const taskId = document.getElementById('s-task').value;
+  if (!memberId || !taskId) { toast('멤버와 과제를 선택해주세요.', 'error'); return; }
+  if (getSubmission(memberId, taskId)) { toast('이미 제출된 항목입니다.', 'error'); return; }
+  const id = 's_' + Date.now();
+  await db.ref('submissions/' + id).set({
+    id, memberId, taskId,
+    method: document.getElementById('s-method').value,
+    note: document.getElementById('s-note').value.trim(),
+    submittedAt: Date.now()
+  });
+  document.getElementById('s-note').value = '';
+  toast(`${memberName(memberId)} → ${taskName(taskId)} 제출 처리 완료`, 'success');
+});
+
+document.getElementById('btn-cancel-sub').addEventListener('click', async () => {
+  const memberId = document.getElementById('s-member').value;
+  const taskId = document.getElementById('s-task').value;
+  if (!memberId || !taskId) { toast('멤버와 과제를 선택해주세요.', 'error'); return; }
+  const sub = getSubmission(memberId, taskId);
+  if (!sub) { toast('제출 내역이 없습니다.', 'error'); return; }
+  await db.ref('submissions/' + sub.id).remove();
+  toast(`${memberName(memberId)} → ${taskName(taskId)} 제출 취소`, 'info');
+});
+
+function renderSubmissions() {
+  populateSubmissionSelects();
+  renderMatrix();
+  renderSubLog();
+}
+
+function renderMatrix() {
+  const members = memberList();
+  const tasks = taskList();
+  const el = document.getElementById('matrix-wrap');
+  if (!members.length || !tasks.length) {
+    el.innerHTML = '<div class="empty">멤버와 과제를 먼저 등록해주세요</div>';
+    return;
+  }
+  let html = `<table><thead><tr>
+    <th style="min-width:90px;">멤버</th>
+    ${tasks.map(t => `<th style="min-width:60px;text-align:center;font-size:11px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${t.name}">${t.week || t.name.slice(0,4)}</th>`).join('')}
+    <th style="min-width:70px;text-align:center;">달성률</th>
+  </tr></thead><tbody>`;
+  members.forEach(m => {
+    const r = calcRate(m.id);
+    const col = r >= 80 ? 'badge-done' : r >= 40 ? 'badge-pending' : 'badge-none';
+    html += `<tr><td style="font-weight:500;font-size:13px;">${m.name}</td>`;
+    tasks.forEach(t => {
+      const sub = getSubmission(m.id, t.id);
+      html += `<td style="text-align:center;padding:4px;">
+        <div class="matrix-cell ${sub ? 'done' : 'empty'}" onclick="toggleSub('${m.id}','${t.id}')" title="${sub ? '클릭하여 취소' : '클릭하여 제출 처리'}">${sub ? '✓' : '—'}</div>
+      </td>`;
+    });
+    html += `<td style="text-align:center;"><span class="badge ${col}">${r}%</span></td></tr>`;
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function toggleSub(memberId, taskId) {
+  if (!db) return;
+  const sub = getSubmission(memberId, taskId);
+  if (sub) {
+    await db.ref('submissions/' + sub.id).remove();
+    toast(`${memberName(memberId)} 제출 취소`, 'info');
+  } else {
+    const id = 's_' + Date.now();
+    await db.ref('submissions/' + id).set({
+      id, memberId, taskId,
+      method: '구두',
+      note: '',
+      submittedAt: Date.now()
+    });
+    toast(`${memberName(memberId)} → ${taskName(taskId)} 제출 처리`, 'success');
+  }
+}
+
+function renderSubLog() {
+  const subs = subList();
+  const tbody = document.getElementById('sub-log-tbody');
+  if (!subs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">제출 내역이 없습니다</td></tr>';
+    return;
+  }
+  tbody.innerHTML = subs.map(s => `<tr>
+    <td>${memberName(s.memberId)}</td>
+    <td style="color:var(--text2);font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${taskName(s.taskId)}</td>
+    <td><span class="badge badge-blue">${s.method}</span></td>
+    <td style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">${formatDate(s.submittedAt)}</td>
+    <td style="font-size:12px;color:var(--text2);">${s.note || '—'}</td>
+  </tr>`).join('');
+}
+
+// ─── Memos ───────────────────────────────────────────
+document.getElementById('btn-add-memo').addEventListener('click', addMemo);
+async function addMemo() {
+  const title = document.getElementById('memo-title').value.trim();
+  if (!title) { toast('제목을 입력해주세요.', 'error'); return; }
+  if (!db) { toast('Firebase가 연결되지 않았습니다.', 'error'); return; }
+  const id = 'n_' + Date.now();
+  await db.ref('memos/' + id).set({
+    id,
+    tag: document.getElementById('memo-tag').value,
+    title,
+    content: document.getElementById('memo-content').value.trim(),
+    createdAt: Date.now()
+  });
+  document.getElementById('memo-title').value = '';
+  document.getElementById('memo-content').value = '';
+  toast('메모가 저장되었습니다.', 'success');
+}
+
+function renderMemos() {
+  const memos = memoList_();
+  const el = document.getElementById('memo-list');
+  if (!memos.length) {
+    el.innerHTML = '<div class="empty">저장된 메모가 없습니다</div>';
+    return;
+  }
+  el.innerHTML = memos.map(n => `<div class="memo-card">
+    <button class="card-del" onclick="deleteMemo('${n.id}')">✕</button>
+    <div class="memo-card-top">
+      <span class="badge badge-accent">${n.tag}</span>
+    </div>
+    <div class="memo-title">${n.title}</div>
+    ${n.content ? `<div class="memo-content">${escHtml(n.content)}</div>` : ''}
+    <div class="memo-date">${formatDate(n.createdAt)}</div>
+  </div>`).join('');
+}
+
+async function deleteMemo(id) {
+  await db.ref('memos/' + id).remove();
+  toast('메모가 삭제되었습니다.', 'info');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Init ─────────────────────────────────────────────
+(function init() {
+  const savedUrl = localStorage.getItem('ai_hub_firebase_url');
+  if (savedUrl) {
+    fbUrlInput.value = savedUrl;
+    initFirebase(savedUrl)
+      .then(() => { hideSetup(); toast('Firebase 연결됨', 'success'); })
+      .catch(() => { showSetup(); toast('저장된 URL로 연결 실패', 'error'); });
+  } else {
+    showSetup();
+  }
+})();
+</script>
+</body>
+</html>
