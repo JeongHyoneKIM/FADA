@@ -1,550 +1,527 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 소모임 과제 관리 대시보드</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FADA_주차별 과제 제출 플랫폼</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #222; --surface3: #2a2a2a;
-  --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
-  --text: #f0f0f0; --text2: #999; --text3: #555;
-  --accent: #7c6af7; --accent2: #a89cf7;
-  --green: #4ade80; --green-bg: rgba(74,222,128,0.1);
-  --amber: #fbbf24; --amber-bg: rgba(251,191,36,0.1);
-  --red: #f87171; --red-bg: rgba(248,113,113,0.1);
-  --blue: #60a5fa; --blue-bg: rgba(96,165,250,0.08);
-  --radius: 12px; --radius-sm: 8px; --sidebar-w: 220px;
+:root{
+  --bg:#f6f8fc; --surface:#ffffff; --surface2:#f9fafb; --surface3:#eef2f7;
+  --line:#e5e7eb; --line2:#d8dee9; --text:#172033; --muted:#6b7280; --soft:#9aa3b2;
+  --brand:#7567f8; --brand2:#a78bfa; --brand-bg:#f1efff;
+  --blue:#3b82f6; --blue-bg:#eaf2ff; --green:#16a34a; --green-bg:#eaf8ef;
+  --amber:#d97706; --amber-bg:#fff4df; --red:#dc2626; --red-bg:#feecec;
+  --pink:#ec4899; --pink-bg:#fff0f7; --radius:18px; --radius-sm:12px; --shadow:0 16px 35px rgba(15,23,42,.07);
+  --sidebar:248px;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; overflow: hidden; }
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
-#sidebar { width: var(--sidebar-w); min-width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; }
-.sidebar-logo { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; overflow: hidden; white-space: nowrap; }
-.sidebar-logo .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-.sidebar-logo .logo-text { font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--text); }
-.sidebar-logo .logo-text span { color: var(--text2); font-weight: 400; font-size: 11px; }
-nav { flex: 1; padding: 10px 0; overflow-y: auto; }
-.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 18px; cursor: pointer; color: var(--text2); font-size: 13.5px; font-weight: 500; transition: all 0.15s; white-space: nowrap; overflow: hidden; }
-.nav-item:hover { background: var(--surface2); color: var(--text); }
-.nav-item.active { background: rgba(124,106,247,0.12); color: var(--accent2); }
-.nav-item .nav-icon { font-size: 16px; flex-shrink: 0; }
-.sidebar-bottom { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
-.conn-status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text2); white-space: nowrap; }
-.conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
-.conn-dot.online { background: var(--green); }
-.btn-reset { background: none; border: 1px solid var(--border2); color: var(--text2); font-size: 11.5px; padding: 6px 10px; border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap; transition: all 0.15s; }
-.btn-reset:hover { border-color: var(--accent); color: var(--accent2); }
-#main { margin-left: var(--sidebar-w); flex: 1; overflow-y: auto; height: 100vh; }
-.page { display: none; padding: 32px 36px; }
-.page.active { display: block; }
-.page-header { margin-bottom: 28px; }
-.page-header h1 { font-size: 22px; font-weight: 600; }
-.page-header p { color: var(--text2); font-size: 13px; margin-top: 4px; }
-.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: inherit; }
-.btn:hover { background: var(--surface3); }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn-primary:hover { background: #6b5ce0; border-color: #6b5ce0; }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.btn-danger { background: var(--red-bg); border-color: var(--red); color: var(--red); }
-.btn-danger:hover { background: rgba(248,113,113,0.2); }
-.badge { display: inline-flex; align-items: center; justify-content: center; padding: 2px 8px; border-radius: 99px; font-size: 11.5px; font-weight: 500; font-family: 'DM Mono', monospace; }
-.badge-done { background: var(--green-bg); color: var(--green); }
-.badge-pending { background: var(--amber-bg); color: var(--amber); }
-.badge-none { background: var(--surface3); color: var(--text3); }
-.badge-accent { background: rgba(124,106,247,0.15); color: var(--accent2); }
-.badge-blue { background: var(--blue-bg); color: var(--blue); }
-.progress-bar { width: 100%; height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.4s ease; }
-.progress-fill.green { background: var(--green); }
-.progress-fill.amber { background: var(--amber); }
-.form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-.form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
-.form-group label { font-size: 12px; color: var(--text2); }
-input, select, textarea { background: var(--surface2); border: 1px solid var(--border2); color: var(--text); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.15s; width: 100%; }
-input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-select option { background: var(--surface2); }
-textarea { resize: vertical; min-height: 80px; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
-.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 8px; }
-.stat-label { font-size: 12px; color: var(--text2); }
-.stat-value { font-size: 28px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); }
-.stat-value span { font-size: 14px; color: var(--text2); font-family: 'Pretendard', sans-serif; }
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-.section-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border2); color: var(--text2); font-size: 12px; font-weight: 500; white-space: nowrap; }
-td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(255,255,255,0.02); }
-.member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
-.member-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; position: relative; }
-.member-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
-.member-name { font-size: 14px; font-weight: 600; }
-.member-role { font-size: 12px; color: var(--text2); margin-top: 2px; }
-.member-email { font-size: 11px; color: var(--text3); margin-top: 4px; font-family: 'DM Mono', monospace; }
-.member-stat { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
-.member-stat-label { font-size: 11px; color: var(--text2); display: flex; justify-content: space-between; }
-.card-del { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; padding: 2px 5px; border-radius: 4px; transition: all 0.15s; line-height: 1; }
-.card-del:hover { color: var(--red); background: var(--red-bg); }
-.matrix-cell { width: 56px; height: 36px; text-align: center; cursor: pointer; border-radius: 6px; transition: all 0.15s; user-select: none; font-size: 14px; display: flex; align-items: center; justify-content: center; margin: auto; }
-.matrix-cell:hover { background: var(--surface3); }
-.matrix-cell.done { background: var(--green-bg); color: var(--green); }
-.matrix-cell.empty { color: var(--text3); }
-.memo-list { display: flex; flex-direction: column; gap: 12px; }
-.memo-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; position: relative; }
-.memo-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.memo-title { font-size: 14px; font-weight: 600; }
-.memo-content { font-size: 13px; color: var(--text2); line-height: 1.6; white-space: pre-wrap; margin-top: 6px; }
-.memo-date { font-size: 11px; color: var(--text3); margin-top: 8px; font-family: 'DM Mono', monospace; }
-#setup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(6px); }
-.setup-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; padding: 36px; width: 460px; max-width: 92vw; }
-.setup-box h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-.setup-box p { color: var(--text2); font-size: 13px; line-height: 1.6; margin-bottom: 24px; }
-.setup-hint { background: var(--blue-bg); border: 1px solid rgba(96,165,250,0.2); border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 14px; font-size: 12px; color: var(--blue); line-height: 1.6; }
-#toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-.toast { background: var(--surface3); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; color: var(--text); animation: toastIn 0.25s ease; pointer-events: none; }
-.toast.success { border-left: 3px solid var(--green); }
-.toast.error { border-left: 3px solid var(--red); }
-.toast.info { border-left: 3px solid var(--accent); }
-@keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.spinner { width: 20px; height: 20px; border: 2px solid var(--surface3); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; vertical-align: middle; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.empty { padding: 40px; text-align: center; color: var(--text3); font-size: 13px; }
-.form-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
-.text-over-due { color: var(--red) !important; }
-@media (max-width: 768px) {
-  :root { --sidebar-w: 56px; }
-  .sidebar-logo .logo-text, .nav-item .nav-label, .btn-reset, .conn-status span { display: none; }
-  .sidebar-logo { justify-content: center; padding: 14px; }
-  .nav-item { justify-content: center; padding: 12px; }
-  .page { padding: 20px 16px; }
-  .stat-grid { grid-template-columns: 1fr 1fr; }
-  .dash-grid { grid-template-columns: 1fr; }
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;background:linear-gradient(135deg,#f8fbff 0%,#f6f4ff 45%,#fff8fb 100%);color:var(--text);min-height:100vh;display:flex;overflow:hidden}
+button,input,select,textarea{font-family:inherit}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#d5dbe7;border-radius:999px}::-webkit-scrollbar-track{background:transparent}
+#setup-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:999}
+.setup-box{width:520px;max-width:92vw;background:var(--surface);border:1px solid rgba(255,255,255,.7);box-shadow:var(--shadow);border-radius:26px;padding:34px}
+.setup-badge{display:inline-flex;align-items:center;gap:8px;background:var(--brand-bg);color:var(--brand);border-radius:99px;font-size:12px;font-weight:700;padding:7px 11px;margin-bottom:14px}
+.setup-box h1{font-size:25px;line-height:1.35;margin-bottom:8px}
+.setup-box p{color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:22px}
+.setup-hint{font-size:12px;color:#64748b;background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:12px 14px;line-height:1.7;margin-top:12px}
+.app{display:flex;width:100%;height:100vh}
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);height:100vh;padding:22px 16px;background:rgba(255,255,255,.78);border-right:1px solid rgba(229,231,235,.85);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:18px}
+.logo{display:flex;align-items:center;gap:12px;padding:8px 8px 18px;border-bottom:1px solid var(--line)}
+.logo-mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--brand),#8bc6ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;box-shadow:0 12px 24px rgba(117,103,248,.23)}
+.logo-title{font-size:15px;font-weight:800;letter-spacing:-.02em}.logo-title span{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-top:2px}
+.profile-card{background:linear-gradient(135deg,#fff,#f5f3ff);border:1px solid #ece8ff;border-radius:20px;padding:14px}
+.profile-top{display:flex;gap:10px;align-items:center}.avatar{width:40px;height:40px;border-radius:50%;background:var(--brand-bg);color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:800}
+.profile-name{font-size:14px;font-weight:800}.profile-mail{font-size:11px;color:var(--muted);margin-top:2px}.role-pill{display:inline-flex;margin-top:10px;border-radius:99px;padding:5px 9px;background:#fff;color:var(--brand);border:1px solid #ddd6fe;font-size:11px;font-weight:800}
+.nav{display:flex;flex-direction:column;gap:6px;flex:1}
+.nav-item{border:0;background:transparent;color:var(--muted);padding:12px 13px;border-radius:14px;text-align:left;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;cursor:pointer}
+.nav-item:hover{background:#f3f4f6;color:var(--text)}.nav-item.active{background:var(--brand-bg);color:var(--brand)}
+.sidebar-bottom{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px}.conn{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:var(--red)}.dot.online{background:var(--green)}
+.main{flex:1;height:100vh;overflow:auto;padding:28px 34px 54px}
+.topbar{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:24px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--brand);background:rgba(117,103,248,.1);border-radius:99px;font-size:12px;font-weight:800;padding:7px 12px;margin-bottom:10px}
+h1{font-size:28px;letter-spacing:-.04em} .subtitle{font-size:14px;color:var(--muted);margin-top:6px}
+.mode-switch{display:flex;gap:8px;background:rgba(255,255,255,.7);border:1px solid var(--line);border-radius:16px;padding:6px}
+.mode-btn{border:0;padding:10px 14px;border-radius:12px;background:transparent;color:var(--muted);font-weight:800;cursor:pointer}.mode-btn.active{background:var(--text);color:#fff}
+.page{display:none}.page.active{display:block}
+.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.stat{position:relative;overflow:hidden;background:rgba(255,255,255,.82);border:1px solid rgba(229,231,235,.95);border-radius:22px;padding:19px;box-shadow:0 8px 24px rgba(15,23,42,.045)}
+.stat:after{content:'';position:absolute;right:-22px;top:-22px;width:78px;height:78px;border-radius:50%;background:var(--tint,var(--brand-bg))}
+.stat-label{font-size:12px;color:var(--muted);font-weight:800}.stat-value{font-family:'DM Mono',monospace;font-size:30px;font-weight:700;margin-top:8px}.stat-value span{font-family:'Pretendard';font-size:13px;color:var(--muted);margin-left:2px}
+.stat-desc{font-size:12px;color:var(--soft);margin-top:8px}
+.grid-2{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.card{background:rgba(255,255,255,.86);border:1px solid rgba(229,231,235,.96);border-radius:24px;padding:20px;box-shadow:0 10px 25px rgba(15,23,42,.04);margin-bottom:18px}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}.card-title{font-size:16px;font-weight:900;letter-spacing:-.02em}.card-desc{font-size:12px;color:var(--muted);margin-top:4px}
+.btn{border:1px solid var(--line2);background:#fff;color:var(--text);border-radius:12px;padding:10px 13px;font-size:13px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.btn:hover{background:#f8fafc}.btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}.btn-primary:hover{background:#6356e8}.btn-danger{background:var(--red-bg);border-color:#fecaca;color:var(--red)}.btn-sm{padding:7px 10px;font-size:12px}.btn-green{background:var(--green);border-color:var(--green);color:#fff}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap}
+.badge-done{background:var(--green-bg);color:var(--green)}.badge-warn{background:var(--amber-bg);color:var(--amber)}.badge-none{background:var(--surface3);color:var(--muted)}.badge-blue{background:var(--blue-bg);color:var(--blue)}.badge-brand{background:var(--brand-bg);color:var(--brand)}.badge-red{background:var(--red-bg);color:var(--red)}
+.progress{height:8px;background:#eef2f7;border-radius:999px;overflow:hidden}.bar{height:100%;background:var(--brand);border-radius:999px;transition:.25s}.bar.green{background:var(--green)}.bar.amber{background:var(--amber)}.bar.blue{background:var(--blue)}
+.assignment-card{border:1px solid var(--line);background:#fff;border-radius:20px;padding:17px;display:flex;flex-direction:column;gap:12px;min-height:196px}
+.assignment-top{display:flex;justify-content:space-between;gap:10px}.week{font-size:12px;color:var(--brand);font-weight:900}.assignment-title{font-size:16px;font-weight:900;margin-top:4px}.assignment-desc{font-size:13px;color:var(--muted);line-height:1.55;min-height:40px}.assignment-meta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-row{display:flex;gap:12px;flex-wrap:wrap}.field{display:flex;flex-direction:column;gap:6px;flex:1;min-width:160px}label{font-size:12px;color:var(--muted);font-weight:800}input,select,textarea{width:100%;border:1px solid var(--line2);background:#fff;border-radius:14px;padding:11px 13px;font-size:13px;outline:none;color:var(--text)}input:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(117,103,248,.12)}textarea{min-height:110px;resize:vertical}
+.upload-zone{border:1.5px dashed #cfd7e6;border-radius:18px;padding:18px;background:#f8fafc;text-align:center;color:var(--muted);font-size:13px}.upload-zone input{margin-top:10px;background:#fff}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;color:var(--muted);font-size:12px;padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:12px 10px;border-bottom:1px solid #eef2f7;vertical-align:middle}tr:hover td{background:#fbfdff}
+.member-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}.member-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;position:relative}
+.member-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px}.icon-btn{border:0;background:#f3f4f6;border-radius:10px;padding:6px;cursor:pointer;color:var(--muted)}
+.notice-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:10px}.notice-body{white-space:pre-wrap;color:var(--muted);line-height:1.65;font-size:13px;margin-top:8px}
+.detail-layout{display:grid;grid-template-columns:.95fr 1.05fr;gap:18px}.check-list{display:flex;flex-direction:column;gap:10px}.check-item{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px}.check-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--brand-bg);color:var(--brand);font-weight:900;flex:0 0 auto}
+.empty{padding:34px;text-align:center;color:var(--soft);font-size:13px}.toast-wrap{position:fixed;right:22px;bottom:22px;z-index:1200;display:flex;flex-direction:column;gap:9px}.toast{background:var(--text);color:#fff;border-radius:14px;padding:11px 14px;font-size:13px;box-shadow:0 16px 34px rgba(15,23,42,.2);animation:pop .18s ease}.toast.success{background:#166534}.toast.error{background:#991b1b}.toast.info{background:#3730a3}@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.helper{font-size:12px;color:var(--muted);line-height:1.65}.muted{color:var(--muted)}.mono{font-family:'DM Mono',monospace}.hidden{display:none!important}
+body.member-mode .admin-only{display:none!important}
+body.admin-mode .admin-only{display:revert}
+@media(max-width:1050px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-2,.detail-layout{grid-template-columns:1fr}.sidebar{width:78px;min-width:78px}.logo-title,.profile-card,.nav-label,.sidebar-bottom span{display:none}.main{padding:22px}.nav-item{justify-content:center}.topbar{flex-direction:column;align-items:flex-start}}
+@media(max-width:680px){body{overflow:auto}.app{display:block}.sidebar{position:relative;width:100%;height:auto;min-width:0;flex-direction:row;overflow:auto}.main{height:auto}.grid-4,.grid-3,.form-grid{grid-template-columns:1fr}.logo,.sidebar-bottom{display:none}.nav{flex-direction:row}.nav-item{white-space:nowrap}.mode-switch{width:100%}}
+
+.resource-box{margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface2)}
+.resource-title{font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.resource-list{display:flex;flex-direction:column;gap:8px}
+.resource-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+.resource-name{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.resource-hint{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+.link-muted{font-size:12px;color:var(--muted);word-break:break-all}
+
 </style>
 </head>
-<body>
-
+<body class="member-mode">
 <div id="setup-overlay">
   <div class="setup-box">
-    <h2>🔥 Firebase 연결 설정</h2>
-    <p>AI 소모임 과제 관리 대시보드를 사용하려면<br>Firebase Realtime Database URL을 입력해주세요.</p>
-    <div class="form-group">
-      <label>Firebase Database URL</label>
-      <input type="url" id="fb-url-input" placeholder="https://your-project-default-rtdb.firebaseio.com">
+    <div class="setup-badge">🔥 Firebase Realtime Database 연결</div>
+    <h1>AI 소모임 과제 제출 플랫폼을 시작합니다</h1>
+    <p>Firebase URL이 코드에 고정되어 있으면 참여자는 GitHub Pages 주소만 클릭해서 접속할 수 있습니다.</p>
+    <div class="field">
+      <label>Firebase Database URL <span style="color:var(--muted);font-weight:400">(관리자용 예비 입력)</span></label>
+      <input id="fb-url-input" type="url" placeholder="코드에 URL을 고정하면 참여자는 입력하지 않아도 됩니다" />
     </div>
     <div class="setup-hint">
-      💡 Firebase Console → Realtime Database → 데이터 탭에서 URL을 확인하세요.<br>
-      형식: https://[프로젝트ID]-default-rtdb.firebaseio.com
+      참여자에게는 GitHub Pages URL만 공유하세요.<br>코드 상단의 <b>FIXED_FIREBASE_DATABASE_URL</b>에 URL을 넣으면 이 입력창은 자동으로 뜨지 않습니다.
     </div>
-    <div style="margin-top:20px;display:flex;gap:10px;align-items:center;">
+    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
       <button class="btn btn-primary" id="btn-connect">연결하기</button>
-      <span id="setup-spinner" style="display:none;"><span class="spinner"></span></span>
-      <span id="setup-error" style="color:var(--red);font-size:12px;"></span>
+      <button class="btn" id="btn-demo">샘플 데이터로 보기</button>
+      <span id="setup-error" style="color:var(--red);font-size:12px;align-self:center"></span>
     </div>
   </div>
 </div>
 
-<aside id="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-icon">🤖</div>
-    <div class="logo-text">AI 소모임<br><span>과제 관리 대시보드</span></div>
-  </div>
-  <nav>
-    <div class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span><span class="nav-label">대시보드</span></div>
-    <div class="nav-item" data-page="members"><span class="nav-icon">👥</span><span class="nav-label">멤버 관리</span></div>
-    <div class="nav-item" data-page="tasks"><span class="nav-icon">📋</span><span class="nav-label">과제 목록</span></div>
-    <div class="nav-item" data-page="submissions"><span class="nav-icon">✅</span><span class="nav-label">제출 현황</span></div>
-    <div class="nav-item" data-page="memos"><span class="nav-icon">📌</span><span class="nav-label">메모·공지</span></div>
-  </nav>
-  <div class="sidebar-bottom">
-    <div class="conn-status">
-      <div class="conn-dot" id="conn-dot"></div>
-      <span id="conn-text">연결 안됨</span>
-    </div>
-    <button class="btn-reset" id="btn-reset-url">⚙ URL 재설정</button>
-  </div>
-</aside>
+<div class="toast-wrap" id="toast-wrap"></div>
 
-<main id="main">
-  <div class="page active" id="page-dashboard">
-    <div class="page-header"><h1>대시보드</h1><p>AI 소모임 과제 현황을 한눈에 확인하세요</p></div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-label">전체 제출률</div><div class="stat-value" id="stat-rate">—<span>%</span></div></div>
-      <div class="stat-card"><div class="stat-label">참여 멤버</div><div class="stat-value" id="stat-members">0<span>명</span></div></div>
-      <div class="stat-card"><div class="stat-label">등록 과제</div><div class="stat-value" id="stat-tasks">0<span>개</span></div></div>
-      <div class="stat-card"><div class="stat-label">총 제출 수</div><div class="stat-value" id="stat-subs">0<span>건</span></div></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">AI</div>
+      <div class="logo-title">AI 소모임 Hub<span>주차별 과제 제출 플랫폼</span></div>
     </div>
-    <div class="dash-grid">
-      <div class="card"><div class="section-title">최근 제출 현황</div><div id="dash-recent"></div></div>
-      <div class="card"><div class="section-title">멤버별 달성률</div><div id="dash-member-rates"></div></div>
-    </div>
-    <div class="card"><div class="section-title">과제별 제출률</div><div id="dash-task-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;"></div></div>
-  </div>
-
-  <div class="page" id="page-members">
-    <div class="page-header"><h1>멤버 관리</h1><p>소모임 멤버를 추가하고 관리합니다</p></div>
-    <div class="form-section">
-      <div class="form-row">
-        <div class="form-group"><label>이름 *</label><input type="text" id="m-name" placeholder="홍길동"></div>
-        <div class="form-group"><label>부서 / 역할</label><input type="text" id="m-role" placeholder="개발팀 / AI 엔지니어"></div>
-        <div class="form-group"><label>이메일</label><input type="email" id="m-email" placeholder="example@email.com"></div>
-      </div>
-      <button class="btn btn-primary" id="btn-add-member">+ 멤버 추가</button>
-    </div>
-    <div id="member-grid" class="member-grid"></div>
-  </div>
-
-  <div class="page" id="page-tasks">
-    <div class="page-header"><h1>과제 목록</h1><p>주차별 과제를 등록하고 관리합니다</p></div>
-    <div class="form-section">
-      <div class="form-row">
-        <div class="form-group"><label>과제명 *</label><input type="text" id="t-name" placeholder="프롬프트 엔지니어링 실습"></div>
-        <div class="form-group" style="max-width:120px;"><label>회차</label><input type="text" id="t-week" placeholder="Vol.01"></div>
-        <div class="form-group" style="max-width:140px;"><label>도구</label><input type="text" id="t-tool" placeholder="ChatGPT, Claude..."></div>
-        <div class="form-group" style="max-width:160px;"><label>마감일</label><input type="date" id="t-due"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>설명</label><textarea id="t-desc" placeholder="과제 설명을 입력하세요..." style="min-height:60px;"></textarea></div>
-      </div>
-      <button class="btn btn-primary" id="btn-add-task">+ 과제 추가</button>
-    </div>
-    <div class="card table-wrap">
-      <table><thead><tr><th>회차</th><th>과제명</th><th>도구</th><th>마감일</th><th style="width:160px;">제출률</th><th></th></tr></thead>
-      <tbody id="task-tbody"></tbody></table>
-    </div>
-  </div>
-
-  <div class="page" id="page-submissions">
-    <div class="page-header"><h1>제출 현황</h1><p>과제 제출을 기록하고 매트릭스로 확인합니다</p></div>
-    <div class="form-section">
-      <div class="form-row">
-        <div class="form-group"><label>멤버</label><select id="s-member"></select></div>
-        <div class="form-group"><label>과제</label><select id="s-task"></select></div>
-        <div class="form-group" style="max-width:160px;"><label>제출 방법</label>
-          <select id="s-method"><option value="파일">파일</option><option value="캡처">캡처</option><option value="링크">링크</option><option value="구두">구두</option></select>
+    <div class="profile-card">
+      <div class="profile-top">
+        <div class="avatar">김</div>
+        <div>
+          <div class="profile-name">김정현</div>
+          <div class="profile-mail">admin@study.local</div>
         </div>
-        <div class="form-group"><label>메모</label><input type="text" id="s-note" placeholder="추가 메모 (선택)"></div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-primary" id="btn-submit">제출 처리</button>
-        <button class="btn btn-danger" id="btn-cancel-sub">제출 취소</button>
+      <span class="role-pill">운영진 · 참여자 겸용</span>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" data-page="dashboard">🏠 <span class="nav-label">참여자 대시보드</span></button>
+      <button class="nav-item" data-page="assignments">📚 <span class="nav-label">주차별 과제</span></button>
+      <button class="nav-item" data-page="submit">📝 <span class="nav-label">과제 제출</span></button>
+      <button class="nav-item" data-page="my">✅ <span class="nav-label">나의 제출 현황</span></button>
+      <button class="nav-item admin-only" data-page="admin">📊 <span class="nav-label">운영진 대시보드</span></button>
+      <button class="nav-item admin-only" data-page="members">👥 <span class="nav-label">멤버 관리</span></button>
+      <button class="nav-item" data-page="notices">📢 <span class="nav-label">공지사항</span></button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">연결 대기</span></div>
+      <button class="btn btn-sm" id="btn-reset-url">URL 재설정</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">Google Login · Firebase DB · File Upload · Storage Download</div>
+        <h1 id="page-title">참여자 메인 대시보드</h1>
+        <p class="subtitle" id="page-subtitle">이번 주 과제와 전체 소모임 제출 현황을 한눈에 확인합니다.</p>
+      </div>
+      <div class="mode-switch">
+        <button class="mode-btn active" id="mode-member">참여자 모드</button>
+        <button class="mode-btn" id="mode-admin">운영진 모드</button>
       </div>
     </div>
-    <div class="card" style="margin-bottom:24px;"><div class="section-title">제출 매트릭스</div><div class="table-wrap" id="matrix-wrap"></div></div>
-    <div class="card"><div class="section-title">제출 상세 로그</div><div class="table-wrap">
-      <table><thead><tr><th>멤버</th><th>과제</th><th>방법</th><th>일시</th><th>메모</th></tr></thead>
-      <tbody id="sub-log-tbody"></tbody></table>
-    </div></div>
-  </div>
 
-  <div class="page" id="page-memos">
-    <div class="page-header"><h1>메모·공지</h1><p>소모임 공지사항과 회의록을 관리합니다</p></div>
-    <div class="form-section">
-      <div class="form-row">
-        <div class="form-group" style="max-width:160px;"><label>태그</label>
-          <select id="memo-tag">
-            <option value="📢 공지">📢 공지</option><option value="📝 회의록">📝 회의록</option>
-            <option value="💬 피드백">💬 피드백</option><option value="💡 아이디어">💡 아이디어</option>
-            <option value="📌 기타">📌 기타</option>
-          </select>
+    <section class="page active" id="page-dashboard">
+      <div class="grid-4">
+        <div class="stat" style="--tint:var(--brand-bg)"><div class="stat-label">전체 참여율</div><div class="stat-value" id="stat-participation">0<span>%</span></div><div class="stat-desc">1회 이상 제출한 멤버 기준</div></div>
+        <div class="stat" style="--tint:var(--blue-bg)"><div class="stat-label">전체 제출률</div><div class="stat-value" id="stat-total-rate">0<span>%</span></div><div class="stat-desc">전체 과제 × 전체 멤버 기준</div></div>
+        <div class="stat" style="--tint:var(--green-bg)"><div class="stat-label">이번 주 제출률</div><div class="stat-value" id="stat-week-rate">0<span>%</span></div><div class="stat-desc" id="stat-week-label">최근 등록 과제 기준</div></div>
+        <div class="stat" style="--tint:var(--red-bg)"><div class="stat-label">미제출자</div><div class="stat-value" id="stat-missing">0<span>명</span></div><div class="stat-desc">이번 주 과제 기준</div></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <div><div class="card-title">이번 주 과제 카드</div><div class="card-desc">마감일, 제출 상태, 파일·이미지 업로드 항목을 확인합니다.</div></div>
+            <span class="badge badge-brand" id="current-week-badge">이번 주</span>
+          </div>
+          <div id="current-assignment"></div>
         </div>
-        <div class="form-group"><label>제목 *</label><input type="text" id="memo-title" placeholder="제목을 입력하세요"></div>
+        <div class="card">
+          <div class="card-head">
+            <div><div class="card-title">나의 진행률</div><div class="card-desc">운영진도 참여자로 포함되어 과제를 제출할 수 있습니다.</div></div>
+          </div>
+          <div id="my-progress"></div>
+        </div>
       </div>
-      <div class="form-row"><div class="form-group"><label>내용</label><textarea id="memo-content" placeholder="내용을 입력하세요..." style="min-height:100px;"></textarea></div></div>
-      <button class="btn btn-primary" id="btn-add-memo">저장</button>
-    </div>
-    <div id="memo-list" class="memo-list"></div>
-  </div>
-</main>
 
-<div id="toast-container"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">최근 공지</div><div class="card-desc">운영진이 등록한 안내사항입니다.</div></div></div>
+          <div id="recent-notices"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">최근 제출 현황</div><div class="card-desc">소모임 전체의 최근 제출 로그입니다.</div></div></div>
+          <div id="recent-submissions"></div>
+        </div>
+      </div>
+    </section>
 
-<!-- Firebase REST API 방식 (eval 없음, CSP 완전 호환) -->
+    <section class="page" id="page-assignments">
+      <div class="card admin-only">
+        <div class="card-head"><div><div class="card-title">과제 등록</div><div class="card-desc">운영진/소유자 통합 권한으로 주차별 과제를 등록합니다.</div></div></div>
+        <div class="form-grid">
+          <div class="field"><label>과제명 *</label><input id="a-title" placeholder="예: 3주차 ChatGPT 업무 자동화 실습"></div>
+          <div class="field"><label>주차 *</label><input id="a-week" placeholder="예: 3주차"></div>
+          <div class="field"><label>도구</label><input id="a-tool" placeholder="ChatGPT, Gemini, GitHub 등"></div>
+          <div class="field"><label>제출 마감일</label><input id="a-due" type="date"></div>
+        </div>
+        <div class="field" style="margin-top:12px"><label>과제 설명</label><textarea id="a-desc" placeholder="과제 목적, 제출 방식, 참고 링크 등을 입력하세요."></textarea></div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="field"><label>과제 안내 HTML 경로 또는 URL</label><input id="a-guide-url" placeholder="예: file:///C:/.../exif_practice_guide.html 또는 Firebase Storage 다운로드 URL"></div>
+          <div class="field"><label>과제 안내 파일명</label><input id="a-guide-name" placeholder="예: exif_practice_guide.html"></div>
+        </div>
+        <div class="field" style="margin-top:12px"><label>실습파일 다운로드 링크</label><textarea id="a-practice-files" placeholder="한 줄에 하나씩 입력하세요. 예: sample_image.zip|https://... 또는 https://...
+※ 다른 노트북에서 다운받게 하려면 file:/// 경로가 아니라 Firebase Storage/Drive 등 다운로드 가능한 URL이 필요합니다."></textarea></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" id="btn-add-assignment">+ 과제 추가</button></div>
+      </div>
+      <div class="grid-3" id="assignment-cards"></div>
+    </section>
+
+    <section class="page" id="page-submit">
+      <div class="detail-layout">
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">과제 상세</div><div class="card-desc">제출할 과제를 선택하면 상세 내용이 표시됩니다.</div></div></div>
+          <div class="field"><label>과제 선택</label><select id="submit-assignment"></select></div>
+          <div id="assignment-detail-box" style="margin-top:16px"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><div class="card-title">과제 제출</div><div class="card-desc">텍스트 메모와 개인 노트북 파일, 캡쳐 이미지를 중심으로 제출합니다. GitHub 링크는 선택입니다.</div></div></div>
+          <div class="form-grid">
+            <div class="field"><label>제출자</label><select id="submit-member"></select></div>
+            <div class="field"><label>제출 상태</label><select id="submit-status"><option value="submitted">제출 완료</option><option value="draft">임시 저장</option><option value="late">지각 제출</option></select></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label>GitHub 링크 <span class="helper">선택</span></label><input id="submit-github" placeholder="코딩 과제일 때만 선택 입력: https://github.com/..."></div>
+          <div class="field" style="margin-top:12px"><label>텍스트 메모</label><textarea id="submit-memo" placeholder="과제 수행 내용, 느낀 점, 어려웠던 점을 입력하세요."></textarea></div>
+          <div class="form-grid" style="margin-top:12px">
+            <div class="upload-zone">📎 과제 파일 업로드<br><span class="helper">개인 노트북의 PDF, ZIP, PPTX, XLSX 등</span><input id="submit-files" type="file" multiple></div>
+            <div class="upload-zone">🖼 캡쳐 이미지 업로드 영역<br><span class="helper">PNG, JPG 등</span><input id="submit-images" type="file" multiple accept="image/*"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn btn-primary" id="btn-save-submission">제출하기</button><button class="btn" id="btn-clear-submit">입력 초기화</button></div>
+          <p class="helper" style="margin-top:12px">중요: 현재 단일 HTML 데모는 제출 파일명만 DB에 기록합니다. 참여자 제출 파일과 운영진이 올리는 실습파일을 다른 노트북에서 실제 다운로드하려면 Firebase Storage 업로드 기능을 연결해야 합니다.</p>
+          <div class="storage-note" style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--blue-bg);font-size:12px;line-height:1.6;color:var(--muted)">
+            운영진 다운로드 구조: 참여자 파일 → Firebase Storage 저장 → 다운로드 URL을 Database에 저장 → 운영진 화면에서 다운로드 버튼으로 확인
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-my">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">나의 제출 현황</div><div class="card-desc">운영진 계정도 참여자로 과제 제출 내역을 확인할 수 있습니다.</div></div></div>
+        <div id="my-submission-list"></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-admin">
+      <div class="grid-4">
+        <div class="stat"><div class="stat-label">전체 멤버</div><div class="stat-value" id="admin-members">0<span>명</span></div><div class="stat-desc">활성 참여자 기준</div></div>
+        <div class="stat"><div class="stat-label">등록 과제</div><div class="stat-value" id="admin-assignments">0<span>개</span></div><div class="stat-desc">전체 주차 과제</div></div>
+        <div class="stat"><div class="stat-label">총 제출 수</div><div class="stat-value" id="admin-submissions">0<span>건</span></div><div class="stat-desc">임시저장 제외</div></div>
+        <div class="stat"><div class="stat-label">이번 주 미제출</div><div class="stat-value" id="admin-missing">0<span>명</span></div><div class="stat-desc">최근 과제 기준</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-head"><div><div class="card-title">주차별 제출률</div><div class="card-desc">과제별 완료율을 확인합니다.</div></div></div><div id="weekly-rates"></div></div>
+        <div class="card"><div class="card-head"><div><div class="card-title">미제출자 목록</div><div class="card-desc">이번 주 과제 기준으로 표시됩니다.</div></div></div><div id="missing-list"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">전체 제출 상세 로그</div><div class="card-desc">제출자, 링크, 파일명, 제출 시간을 확인합니다.</div></div></div>
+        <div class="table-wrap"><table><thead><tr><th>제출자</th><th>과제</th><th>상태</th><th>GitHub 선택</th><th>파일</th><th>이미지</th><th>제출일</th><th></th></tr></thead><tbody id="all-submission-tbody"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-members">
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">멤버 추가</div><div class="card-desc">권한은 member/admin 두 가지만 사용합니다. admin은 참여자 기능도 모두 사용할 수 있습니다.</div></div></div>
+        <div class="form-grid">
+          <div class="field"><label>이름 *</label><input id="m-name" placeholder="김정현"></div>
+          <div class="field"><label>이메일</label><input id="m-email" placeholder="name@company.com"></div>
+          <div class="field"><label>부서/역할</label><input id="m-dept" placeholder="FA기술담당"></div>
+          <div class="field"><label>권한</label><select id="m-role"><option value="member">member</option><option value="admin">admin</option></select></div>
+        </div>
+        <div style="margin-top:12px"><button class="btn btn-primary" id="btn-add-member">+ 멤버 추가</button></div>
+      </div>
+      <div class="member-list" id="member-list"></div>
+    </section>
+
+    <section class="page" id="page-notices">
+      <div class="card admin-only">
+        <div class="card-head"><div><div class="card-title">공지 등록</div><div class="card-desc">참여자 대시보드의 최근 공지에 함께 표시됩니다.</div></div></div>
+        <div class="field"><label>제목 *</label><input id="n-title" placeholder="예: 3주차 과제 제출 안내"></div>
+        <div class="field" style="margin-top:12px"><label>내용</label><textarea id="n-content" placeholder="공지 내용을 입력하세요."></textarea></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" id="btn-add-notice">공지 저장</button></div>
+      </div>
+      <div id="notice-list"></div>
+    </section>
+  </main>
+</div>
+
 <script>
-const AVATAR_COLORS = [
-  ['#7c6af7','rgba(124,106,247,0.2)'],['#4ade80','rgba(74,222,128,0.15)'],
-  ['#fbbf24','rgba(251,191,36,0.15)'],['#f87171','rgba(248,113,113,0.15)'],
-  ['#60a5fa','rgba(96,165,250,0.15)'],['#f472b6','rgba(244,114,182,0.15)'],
-  ['#34d399','rgba(52,211,153,0.15)'],['#fb923c','rgba(251,146,60,0.15)'],
-  ['#a78bfa','rgba(167,139,250,0.15)'],['#38bdf8','rgba(56,189,248,0.15)'],
-];
-
 let DB_URL = '';
+// ✅ 여기에 Firebase Realtime Database URL을 고정하세요.
+// 예: const FIXED_FIREBASE_DATABASE_URL = 'https://your-project-default-rtdb.firebaseio.com/';
+// URL을 넣고 GitHub Pages에 업로드하면 참여자는 Firebase URL을 입력하지 않아도 됩니다.
+const FIXED_FIREBASE_DATABASE_URL = 'https://aiproject-b8d0f-default-rtdb.firebaseio.com/';
+let demoMode = false;
 let pollTimer = null;
-const state = { members:{}, tasks:{}, submissions:{}, memos:{} };
+let currentMode = 'member';
+const CURRENT_USER_ID = 'me_admin';
+const state = { members:{}, assignments:{}, submissions:{}, notices:{} };
 
-// ─── Toast ───────────────────────────────────────────
-function toast(msg, type='info') {
-  const c = document.getElementById('toast-container');
-  const el = document.createElement('div');
-  el.className = 'toast ' + type;
-  el.textContent = msg;
-  c.appendChild(el);
-  setTimeout(() => el.remove(), 2400);
-}
+const sample = {
+  members:{
+    me_admin:{id:'me_admin',name:'김정현',email:'admin@study.local',department:'FA기술담당',role:'admin',joinedAt:Date.now()-100000},
+    m_1:{id:'m_1',name:'박서연',email:'seoyeon@study.local',department:'물류설비',role:'member',joinedAt:Date.now()-90000},
+    m_2:{id:'m_2',name:'이도윤',email:'doyoon@study.local',department:'자동화',role:'member',joinedAt:Date.now()-80000},
+    m_3:{id:'m_3',name:'최민지',email:'minji@study.local',department:'설비기술',role:'member',joinedAt:Date.now()-70000}
+  },
+  assignments:{
+    a_1:{id:'a_1',week:'1주차',title:'생성형 AI 업무 적용 사례 찾기',tool:'ChatGPT',due:'2026-05-29',desc:'업무에서 바로 활용 가능한 AI 적용 사례를 3개 찾고, 기대효과를 정리합니다.',createdAt:Date.now()-60000},
+    a_2:{id:'a_2',week:'2주차',title:'프롬프트 개선 실습',tool:'ChatGPT / Gemini',due:'2026-06-05',desc:'같은 업무 질문을 일반 프롬프트와 구조화 프롬프트로 비교해 결과 차이를 정리합니다.',createdAt:Date.now()-50000},
+    a_3:{id:'a_3',week:'3주차',title:'실습 결과 파일과 캡쳐 이미지 제출하기',tool:'파일 업로드',due:'2026-06-12',desc:'개인 노트북에 저장된 결과 파일과 캡쳐 이미지를 업로드하고, 필요할 때만 GitHub 링크를 선택 입력합니다.',createdAt:Date.now()-40000}
+  },
+  submissions:{
+    s_1:{id:'s_1',assignmentId:'a_1',memberId:'me_admin',status:'submitted',githubUrl:'https://github.com/sample/ai-task',memo:'AI 활용 아이디어를 정리했습니다.',fileNames:['과제1_정리.pdf'],imageNames:['결과화면.png'],submittedAt:Date.now()-30000},
+    s_2:{id:'s_2',assignmentId:'a_1',memberId:'m_1',status:'submitted',githubUrl:'',memo:'업무 자동화 사례 중심으로 작성했습니다.',fileNames:['1주차.docx'],imageNames:[],submittedAt:Date.now()-22000},
+    s_3:{id:'s_3',assignmentId:'a_2',memberId:'m_2',status:'submitted',githubUrl:'https://github.com/sample/prompt',memo:'프롬프트 비교 결과입니다.',fileNames:[],imageNames:['비교캡쳐.jpg'],submittedAt:Date.now()-12000}
+  },
+  notices:{
+    n_1:{id:'n_1',title:'이번 주 과제 제출 안내',content:'과제 제출 시 결과 파일, 캡쳐 이미지, 간단한 회고 메모를 남겨주세요. GitHub 링크는 코딩 과제일 때만 선택으로 입력하면 됩니다.',createdAt:Date.now()-15000}
+  }
+};
 
-// ─── Navigation ──────────────────────────────────────
-document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    item.classList.add('active');
-    document.getElementById('page-' + item.dataset.page).classList.add('active');
+function $(id){return document.getElementById(id)}
+function list(k){return Object.values(state[k]||{}).sort((a,b)=>(a.createdAt||a.joinedAt||a.submittedAt||0)-(b.createdAt||b.joinedAt||b.submittedAt||0))}
+function members(){return Object.values(state.members||{}).sort((a,b)=>(a.joinedAt||0)-(b.joinedAt||0))}
+function assignments(){return Object.values(state.assignments||{}).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0))}
+function submissions(){return Object.values(state.submissions||{}).sort((a,b)=>(b.submittedAt||0)-(a.submittedAt||0))}
+function notices(){return Object.values(state.notices||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))}
+function memberName(id){return state.members[id]?.name||'—'} function assignmentTitle(id){return state.assignments[id]?.title||'—'}
+function esc(s=''){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function parsePracticeFiles(raw){
+  if(Array.isArray(raw)) return raw;
+  return String(raw||'').split('\n').map(x=>x.trim()).filter(Boolean).map((line,i)=>{
+    const parts=line.split('|');
+    const url=(parts.length>1?parts.slice(1).join('|'):parts[0]).trim();
+    const name=(parts.length>1?parts[0].trim():decodeURIComponent((url.split('/').pop()||`실습파일_${i+1}`).split('?')[0]));
+    return {name:name||`실습파일_${i+1}`, url};
   });
-});
-
-// ─── Firebase REST API ───────────────────────────────
-async function fbGet(path) {
-  const res = await fetch(DB_URL + path + '.json');
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
 }
-async function fbSet(path, data) {
-  const res = await fetch(DB_URL + path + '.json', { method:'PUT', body: JSON.stringify(data), headers:{'Content-Type':'application/json'} });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+function resourceLink(url,label='열기',download=false){
+  if(!url) return '';
+  const safe=esc(url);
+  return `<a class="btn btn-sm" href="${safe}" target="_blank" rel="noopener" ${download?'download':''}>${label}</a>`;
 }
-async function fbDelete(path) {
-  const res = await fetch(DB_URL + path + '.json', { method:'DELETE' });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
+function renderAssignmentResources(a){
+  const guideName=a.guideName||((a.guideUrl||'').split('/').pop()||'과제 안내 HTML');
+  const files=parsePracticeFiles(a.practiceFiles);
+  const guide=a.guideUrl?`<div class="resource-box"><div class="resource-title">📄 과제 안내 HTML</div><div class="resource-item"><div><div class="resource-name">${esc(guideName)}</div><div class="link-muted">${esc(a.guideUrl)}</div></div><div style="display:flex;gap:6px;flex-shrink:0">${resourceLink(a.guideUrl,'열기')}${resourceLink(a.guideUrl,'다운로드',true)}</div></div><div class="resource-hint">file:/// 경로는 등록한 PC에서만 열릴 수 있습니다. 참여자가 다른 노트북에서 보려면 Firebase Storage 같은 온라인 저장소 URL로 등록해야 합니다.</div></div>`:'';
+  const practice=files.length?`<div class="resource-box"><div class="resource-title">📦 실습파일</div><div class="resource-list">${files.map(f=>`<div class="resource-item"><div><div class="resource-name">${esc(f.name)}</div><div class="link-muted">${esc(f.url)}</div></div><div style="flex-shrink:0">${resourceLink(f.url,'다운로드',true)}</div></div>`).join('')}</div></div>`:'';
+  return guide+practice;
 }
-
-// ─── Polling (실시간 동기화) ──────────────────────────
-async function poll() {
-  try {
-    const data = await fbGet('');
-    let changed = false;
-    ['members','tasks','submissions','memos'].forEach(k => {
-      const fresh = (data && data[k]) ? data[k] : {};
-      if (JSON.stringify(state[k]) !== JSON.stringify(fresh)) { state[k] = fresh; changed = true; }
-    });
-    if (changed) renderAll();
-    setConnStatus(true);
-  } catch(e) {
-    setConnStatus(false);
+function toast(msg,type='info'){const el=document.createElement('div');el.className='toast '+type;el.textContent=msg;$('toast-wrap').appendChild(el);setTimeout(()=>el.remove(),2300)}
+function today(){return new Date(new Date().toDateString())}
+function dueText(d){if(!d)return '마감일 미정'; const x=new Date(d); const diff=Math.ceil((x-today())/86400000); if(diff<0)return `${Math.abs(diff)}일 지남`; if(diff===0)return '오늘 마감'; return `${diff}일 남음`}
+function fmtDate(ts){if(!ts)return '—'; return new Date(ts).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}
+function latestAssignment(){const a=assignments(); return a[a.length-1]||null}
+function getSub(memberId, assignmentId){return submissions().find(s=>s.memberId===memberId&&s.assignmentId===assignmentId&&s.status!=='draft')}
+function getSubmissionAny(memberId, assignmentId){return submissions().find(s=>s.memberId===memberId&&s.assignmentId===assignmentId)}
+function rateClass(n){return n>=80?'green':n>=40?'amber':'blue'}
+function myId(){return CURRENT_USER_ID}
+function calc(){
+  const ms=members(), as=assignments(), ss=submissions().filter(s=>s.status!=='draft');
+  const totalSlots=ms.length*as.length;
+  const totalRate=totalSlots?Math.round(ss.length/totalSlots*100):0;
+  const participated=ms.filter(m=>ss.some(s=>s.memberId===m.id)).length;
+  const participation=ms.length?Math.round(participated/ms.length*100):0;
+  const cur=latestAssignment();
+  const weekSubmitted=cur?ms.filter(m=>getSub(m.id,cur.id)).length:0;
+  const weekRate=cur&&ms.length?Math.round(weekSubmitted/ms.length*100):0;
+  const missing=cur?ms.filter(m=>!getSub(m.id,cur.id)):[];
+  const myDone=as.filter(a=>getSub(myId(),a.id)).length;
+  const myRate=as.length?Math.round(myDone/as.length*100):0;
+  return {ms,as,ss,totalRate,participation,cur,weekRate,missing,myDone,myRate};
+}
+async function fbGet(path=''){const res=await fetch(DB_URL+path+'.json'); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
+async function fbSet(path,data){ if(demoMode){setLocal(path,data); renderAll(); return data} const res=await fetch(DB_URL+path+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
+async function fbDelete(path){ if(demoMode){deleteLocal(path); renderAll(); return} const res=await fetch(DB_URL+path+'.json',{method:'DELETE'}); if(!res.ok)throw new Error('HTTP '+res.status)}
+function setLocal(path,data){const [k,id]=path.split('/'); state[k][id]=data}
+function deleteLocal(path){const [k,id]=path.split('/'); delete state[k][id]}
+async function poll(){
+  if(demoMode)return;
+  try{
+    const data=await fbGet('');
+    ['members','assignments','submissions','notices'].forEach(k=>state[k]=(data&&data[k])?data[k]:{});
+    ensureMe();
+    renderAll(); setConn(true);
+  }catch(e){setConn(false)}
+}
+function ensureMe(){
+  if(!state.members[CURRENT_USER_ID]){
+    state.members[CURRENT_USER_ID]={id:CURRENT_USER_ID,name:'김정현',email:'admin@study.local',department:'FA기술담당',role:'admin',joinedAt:Date.now()};
+    if(DB_URL&&!demoMode) fbSet('members/'+CURRENT_USER_ID,state.members[CURRENT_USER_ID]).catch(()=>{});
   }
 }
+function setConn(v){$('conn-dot').className='dot'+(v?' online':''); $('conn-text').textContent=v?'Firebase 연결됨':'연결 끊김'}
+function startPolling(){clearInterval(pollTimer); poll(); pollTimer=setInterval(poll,3000)}
+function hideSetup(){ $('setup-overlay').style.display='none'} function showSetup(){ $('setup-overlay').style.display='flex'}
 
-function startPolling() {
-  if (pollTimer) clearInterval(pollTimer);
-  poll();
-  pollTimer = setInterval(poll, 3000);
-}
-
-function stopPolling() {
-  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-}
-
-// ─── Setup ───────────────────────────────────────────
-const overlay = document.getElementById('setup-overlay');
-const fbUrlInput = document.getElementById('fb-url-input');
-const setupError = document.getElementById('setup-error');
-const setupSpinner = document.getElementById('setup-spinner');
-
-function showSetup() { overlay.style.display = 'flex'; setupError.textContent = ''; stopPolling(); }
-function hideSetup() { overlay.style.display = 'none'; }
-
-document.getElementById('btn-connect').addEventListener('click', tryConnect);
-fbUrlInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryConnect(); });
-document.getElementById('btn-reset-url').addEventListener('click', () => {
-  localStorage.removeItem('ai_hub_firebase_url');
-  DB_URL = '';
-  setConnStatus(false);
-  showSetup();
-});
-
-async function tryConnect() {
-  let url = fbUrlInput.value.trim();
-  if (!url) { setupError.textContent = 'URL을 입력해주세요.'; return; }
-  if (!url.includes('firebaseio.com')) { setupError.textContent = 'Firebase Database URL 형식이 올바르지 않습니다.'; return; }
-  if (!url.endsWith('/')) url += '/';
-  setupError.textContent = '';
-  setupSpinner.style.display = 'inline-block';
-  try {
-    const res = await fetch(url + '.json');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    DB_URL = url;
-    localStorage.setItem('ai_hub_firebase_url', url);
-    hideSetup();
-    setConnStatus(true);
-    startPolling();
-    toast('Firebase 연결 성공!', 'success');
-  } catch(e) {
-    setupError.textContent = '연결 실패: ' + e.message;
-  } finally {
-    setupSpinner.style.display = 'none';
+document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>showPage(btn.dataset.page)));
+function applyMode(){
+  document.body.classList.toggle('member-mode', currentMode==='member');
+  document.body.classList.toggle('admin-mode', currentMode==='admin');
+  $('mode-member').classList.toggle('active', currentMode==='member');
+  $('mode-admin').classList.toggle('active', currentMode==='admin');
+  if(currentMode==='member'){
+    const activeAdminPage = ['admin','members'].some(page => $('page-'+page)?.classList.contains('active'));
+    if(activeAdminPage) showPage('dashboard');
   }
 }
-
-function setConnStatus(online) {
-  document.getElementById('conn-dot').className = 'conn-dot' + (online ? ' online' : '');
-  document.getElementById('conn-text').textContent = online ? 'Firebase 연결됨' : '연결 끊김';
-}
-
-// ─── Helpers ─────────────────────────────────────────
-function memberList() { return Object.values(state.members).sort((a,b)=>a.joinedAt-b.joinedAt); }
-function taskList() { return Object.values(state.tasks).sort((a,b)=>a.createdAt-b.createdAt); }
-function subList() { return Object.values(state.submissions).sort((a,b)=>b.submittedAt-a.submittedAt); }
-function memoList_() { return Object.values(state.memos).sort((a,b)=>b.createdAt-a.createdAt); }
-function memberName(id) { return state.members[id]?state.members[id].name:'—'; }
-function taskName(id) { return state.tasks[id]?state.tasks[id].name:'—'; }
-function getSub(mId,tId) { return Object.values(state.submissions).find(s=>s.memberId===mId&&s.taskId===tId); }
-function calcRate(mId) { const t=taskList(); return t.length?Math.round(t.filter(x=>getSub(mId,x.id)).length/t.length*100):0; }
-function calcTaskRate(tId) { const m=memberList(); return m.length?Math.round(m.filter(x=>getSub(x.id,tId)).length/m.length*100):0; }
-function pColor(p) { return p>=80?'green':p>=40?'amber':''; }
-function fmtDate(ts) { if(!ts) return '—'; const d=new Date(ts); return d.toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }
-function fmtDue(s) { if(!s) return '—'; const [y,m,d]=s.split('-'); return `${y}.${m}.${d}`; }
-function isOver(s) { return s?new Date(s)<new Date(new Date().toDateString()):false; }
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function avatarEl(m) { const [fg,bg]=AVATAR_COLORS[m.colorIdx%AVATAR_COLORS.length]; return `<div class="member-avatar" style="background:${bg};color:${fg};">${m.name.slice(0,2)}</div>`; }
-
-// ─── Render ───────────────────────────────────────────
-function renderAll() { renderDashboard(); renderMembers(); renderTasks(); renderSubmissions(); renderMemos(); }
-
-function renderDashboard() {
-  const members=memberList(),tasks=taskList(),subs=subList();
-  const total=members.length*tasks.length, rate=total>0?Math.round(subs.length/total*100):0;
-  document.getElementById('stat-rate').innerHTML=`${rate}<span>%</span>`;
-  document.getElementById('stat-members').innerHTML=`${members.length}<span>명</span>`;
-  document.getElementById('stat-tasks').innerHTML=`${tasks.length}<span>개</span>`;
-  document.getElementById('stat-subs').innerHTML=`${subs.length}<span>건</span>`;
-  const r5=subs.slice(0,5);
-  document.getElementById('dash-recent').innerHTML=r5.length?`<table style="width:100%;font-size:13px;">${r5.map(s=>`<tr><td style="padding:7px 4px;">${memberName(s.memberId)}</td><td style="padding:7px 4px;color:var(--text2);">${taskName(s.taskId)}</td><td style="padding:7px 4px;text-align:right;"><span class="badge badge-done">${s.method}</span></td></tr>`).join('')}</table>`:'<div class="empty">제출 내역이 없습니다</div>';
-  document.getElementById('dash-member-rates').innerHTML=members.length?members.map(m=>{const r=calcRate(m.id);return `<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span>${m.name}</span><span style="color:var(--text2);font-family:'DM Mono',monospace;">${r}%</span></div><div class="progress-bar"><div class="progress-fill ${pColor(r)}" style="width:${r}%"></div></div></div>`;}).join(''):'<div class="empty">멤버가 없습니다</div>';
-  document.getElementById('dash-task-grid').innerHTML=tasks.length?tasks.map(t=>{const r=calcTaskRate(t.id);return `<div class="card" style="padding:14px;"><div style="font-size:12px;color:var(--text2);margin-bottom:4px;">${t.week||'—'}</div><div style="font-size:13px;font-weight:600;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.name}</div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:5px;"><span>제출률</span><span style="font-family:'DM Mono',monospace;">${r}%</span></div><div class="progress-bar"><div class="progress-fill ${pColor(r)}" style="width:${r}%"></div></div></div>`;}).join(''):'<div class="empty" style="grid-column:1/-1;">과제가 없습니다</div>';
-}
-
-function renderMembers() {
-  const members=memberList(),tasks=taskList();
-  const el=document.getElementById('member-grid');
-  if(!members.length){el.innerHTML='<div class="empty" style="width:100%;">등록된 멤버가 없습니다</div>';return;}
-  el.innerHTML=members.map(m=>{const r=calcRate(m.id),done=tasks.filter(t=>getSub(m.id,t.id)).length;return `<div class="member-card"><button class="card-del" onclick="delMember('${m.id}')">✕</button>${avatarEl(m)}<div class="member-name">${m.name}</div>${m.role?`<div class="member-role">${m.role}</div>`:''}<div class="member-email">${m.email||''}</div><div class="member-stat"><div class="member-stat-label"><span>달성률</span><span style="font-family:'DM Mono',monospace;">${done}/${tasks.length} (${r}%)</span></div><div class="progress-bar"><div class="progress-fill ${pColor(r)}" style="width:${r}%"></div></div></div></div>`;}).join('');
-}
-
-function renderTasks() {
-  const tasks=taskList();
-  const tbody=document.getElementById('task-tbody');
-  if(!tasks.length){tbody.innerHTML='<tr><td colspan="6" class="empty">등록된 과제가 없습니다</td></tr>';return;}
-  tbody.innerHTML=tasks.map(t=>{const r=calcTaskRate(t.id),over=isOver(t.due);return `<tr><td><span class="badge badge-accent">${t.week||'—'}</span></td><td style="font-weight:500;">${t.name}${t.desc?`<div style="font-size:11px;color:var(--text3);margin-top:2px;">${esc(t.desc)}</div>`:''}</td><td style="color:var(--text2);font-size:12px;">${t.tool||'—'}</td><td style="font-family:'DM Mono',monospace;font-size:12px;${over?'color:var(--red)':''}">${fmtDue(t.due)}</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="flex:1;"><div class="progress-fill ${pColor(r)}" style="width:${r}%"></div></div><span style="font-size:11px;color:var(--text2);font-family:'DM Mono',monospace;min-width:32px;text-align:right;">${r}%</span></div></td><td><button class="btn btn-sm btn-danger" onclick="delTask('${t.id}')">삭제</button></td></tr>`;}).join('');
-}
-
-function renderSubmissions() {
-  const members=memberList(),tasks=taskList();
-  const mSel=document.getElementById('s-member'),tSel=document.getElementById('s-task');
-  const prevM=mSel.value,prevT=tSel.value;
-  mSel.innerHTML=members.length?members.map(m=>`<option value="${m.id}">${m.name}</option>`).join(''):'<option value="">— 멤버 없음 —</option>';
-  tSel.innerHTML=tasks.length?tasks.map(t=>`<option value="${t.id}">${t.week?`[${t.week}] `:''}${t.name}</option>`).join(''):'<option value="">— 과제 없음 —</option>';
-  if(prevM) mSel.value=prevM;
-  if(prevT) tSel.value=prevT;
-  const el=document.getElementById('matrix-wrap');
-  if(!members.length||!tasks.length){el.innerHTML='<div class="empty">멤버와 과제를 먼저 등록해주세요</div>';}
-  else {
-    let html=`<table><thead><tr><th style="min-width:90px;">멤버</th>${tasks.map(t=>`<th style="min-width:60px;text-align:center;font-size:11px;" title="${t.name}">${t.week||t.name.slice(0,4)}</th>`).join('')}<th style="min-width:70px;text-align:center;">달성률</th></tr></thead><tbody>`;
-    members.forEach(m=>{const r=calcRate(m.id),col=r>=80?'badge-done':r>=40?'badge-pending':'badge-none';html+=`<tr><td style="font-weight:500;font-size:13px;">${m.name}</td>`;tasks.forEach(t=>{const s=getSub(m.id,t.id);html+=`<td style="text-align:center;padding:4px;"><div class="matrix-cell ${s?'done':'empty'}" onclick="toggleSub('${m.id}','${t.id}')">${s?'✓':'—'}</div></td>`;});html+=`<td style="text-align:center;"><span class="badge ${col}">${r}%</span></td></tr>`;});
-    html+='</tbody></table>';
-    el.innerHTML=html;
+function showPage(page){
+  if(currentMode==='member' && ['admin','members'].includes(page)){
+    toast('참여자 모드에서는 운영진 화면에 접근하지 않습니다. 운영진 모드로 전환해주세요.','info');
+    page='dashboard';
   }
-  const subs=subList();
-  document.getElementById('sub-log-tbody').innerHTML=subs.length?subs.map(s=>`<tr><td>${memberName(s.memberId)}</td><td style="color:var(--text2);font-size:12px;">${taskName(s.taskId)}</td><td><span class="badge badge-blue">${s.method}</span></td><td style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;">${fmtDate(s.submittedAt)}</td><td style="font-size:12px;color:var(--text2);">${s.note||'—'}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">제출 내역이 없습니다</td></tr>';
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  $('page-'+page).classList.add('active');
+  const titles={dashboard:['참여자 메인 대시보드','이번 주 과제와 전체 소모임 제출 현황을 한눈에 확인합니다.'],assignments:['주차별 과제 목록','참여자는 과제 등록 없이 주차별 과제를 확인하고 제출만 진행합니다.'],submit:['과제 상세 및 제출','텍스트 메모, 개인 파일, 캡쳐 이미지를 제출합니다. GitHub 링크는 선택입니다.'],my:['나의 제출 현황','내가 제출한 과제와 진행률을 확인합니다.'],admin:['운영진 관리 대시보드','전체 참여율, 제출률, 미제출자, 최근 제출 현황을 관리합니다.'],members:['멤버 관리','소모임 참여자와 운영진 권한을 관리합니다.'],notices:['공지사항','소모임 안내와 과제 관련 공지를 관리합니다.']};
+  $('page-title').textContent=titles[page][0]; $('page-subtitle').textContent=titles[page][1];
+  applyMode();
 }
-
-function renderMemos() {
-  const memos=memoList_();
-  document.getElementById('memo-list').innerHTML=memos.length?memos.map(n=>`<div class="memo-card"><button class="card-del" onclick="delMemo('${n.id}')">✕</button><div class="memo-card-top"><span class="badge badge-accent">${n.tag}</span></div><div class="memo-title">${esc(n.title)}</div>${n.content?`<div class="memo-content">${esc(n.content)}</div>`:''}<div class="memo-date">${fmtDate(n.createdAt)}</div></div>`).join(''):'<div class="empty">저장된 메모가 없습니다</div>';
+$('mode-member').onclick=()=>{currentMode='member';applyMode();showPage('dashboard')}
+$('mode-admin').onclick=()=>{currentMode='admin';applyMode();showPage('admin')}
+function normalizedFixedUrl(){
+  const url = (FIXED_FIREBASE_DATABASE_URL || '').trim();
+  if(!url || url === 'PASTE_YOUR_FIREBASE_DATABASE_URL_HERE') return '';
+  return url.endsWith('/') ? url : url + '/';
 }
-
-// ─── Actions ─────────────────────────────────────────
-document.getElementById('btn-add-member').addEventListener('click', async () => {
-  const name=document.getElementById('m-name').value.trim();
-  if(!name){toast('이름을 입력해주세요.','error');return;}
-  const id='m_'+Date.now();
-  await fbSet('members/'+id,{id,name,role:document.getElementById('m-role').value.trim(),email:document.getElementById('m-email').value.trim(),colorIdx:memberList().length%AVATAR_COLORS.length,joinedAt:Date.now()});
-  ['m-name','m-role','m-email'].forEach(x=>document.getElementById(x).value='');
-  toast(name+' 멤버가 추가되었습니다.','success'); poll();
-});
-
-async function delMember(id) {
-  if(!confirm('멤버를 삭제하면 관련 제출 내역도 삭제됩니다. 계속하시겠습니까?')) return;
-  const name=state.members[id]?.name;
-  await fbDelete('members/'+id);
-  for(const s of Object.values(state.submissions).filter(s=>s.memberId===id)) await fbDelete('submissions/'+s.id);
-  toast(name+' 멤버가 삭제되었습니다.','info'); poll();
+$('btn-reset-url').onclick=()=>{
+  localStorage.removeItem('study_dashboard_firebase_url');
+  const fixed = normalizedFixedUrl();
+  DB_URL = fixed; demoMode=false; clearInterval(pollTimer);
+  if(fixed){ hideSetup(); startPolling(); toast('고정 Firebase URL로 다시 연결합니다','info'); }
+  else { showSetup(); setConn(false); }
 }
-
-document.getElementById('btn-add-task').addEventListener('click', async () => {
-  const name=document.getElementById('t-name').value.trim();
-  if(!name){toast('과제명을 입력해주세요.','error');return;}
-  const id='t_'+Date.now();
-  await fbSet('tasks/'+id,{id,name,week:document.getElementById('t-week').value.trim(),tool:document.getElementById('t-tool').value.trim(),due:document.getElementById('t-due').value,desc:document.getElementById('t-desc').value.trim(),createdAt:Date.now()});
-  ['t-name','t-week','t-tool','t-due','t-desc'].forEach(x=>document.getElementById(x).value='');
-  toast('"'+name+'" 과제가 추가되었습니다.','success'); poll();
-});
-
-async function delTask(id) {
-  if(!confirm('과제를 삭제하면 관련 제출 내역도 삭제됩니다. 계속하시겠습니까?')) return;
-  const name=state.tasks[id]?.name;
-  await fbDelete('tasks/'+id);
-  for(const s of Object.values(state.submissions).filter(s=>s.taskId===id)) await fbDelete('submissions/'+s.id);
-  toast('"'+name+'" 과제가 삭제되었습니다.','info'); poll();
+$('btn-connect').onclick=async()=>{
+  let url=$('fb-url-input').value.trim();
+  if(!url){$('setup-error').textContent='URL을 입력해주세요.';return}
+  if(!url.endsWith('/'))url+='/';
+  try{DB_URL=url;await fbGet('');localStorage.setItem('study_dashboard_firebase_url',url);demoMode=false;hideSetup();startPolling();toast('Firebase 연결 성공','success')}catch(e){$('setup-error').textContent='연결 실패: '+e.message}
 }
+$('btn-demo').onclick=()=>{Object.assign(state,JSON.parse(JSON.stringify(sample)));demoMode=true;hideSetup();ensureMe();renderAll();setConn(true);$('conn-text').textContent='샘플 데이터';toast('샘플 데이터로 실행합니다','success')}
 
-document.getElementById('btn-submit').addEventListener('click', async () => {
-  const mId=document.getElementById('s-member').value,tId=document.getElementById('s-task').value;
-  if(!mId||!tId){toast('멤버와 과제를 선택해주세요.','error');return;}
-  if(getSub(mId,tId)){toast('이미 제출된 항목입니다.','error');return;}
-  const id='s_'+Date.now();
-  await fbSet('submissions/'+id,{id,memberId:mId,taskId:tId,method:document.getElementById('s-method').value,note:document.getElementById('s-note').value.trim(),submittedAt:Date.now()});
-  document.getElementById('s-note').value='';
-  toast(memberName(mId)+' → '+taskName(tId)+' 제출 처리 완료','success'); poll();
-});
-
-document.getElementById('btn-cancel-sub').addEventListener('click', async () => {
-  const mId=document.getElementById('s-member').value,tId=document.getElementById('s-task').value;
-  if(!mId||!tId){toast('멤버와 과제를 선택해주세요.','error');return;}
-  const sub=getSub(mId,tId);
-  if(!sub){toast('제출 내역이 없습니다.','error');return;}
-  await fbDelete('submissions/'+sub.id);
-  toast(memberName(mId)+' → '+taskName(tId)+' 제출 취소','info'); poll();
-});
-
-async function toggleSub(mId,tId) {
-  const sub=getSub(mId,tId);
-  if(sub){await fbDelete('submissions/'+sub.id);toast(memberName(mId)+' 제출 취소','info');}
-  else{const id='s_'+Date.now();await fbSet('submissions/'+id,{id,memberId:mId,taskId:tId,method:'구두',note:'',submittedAt:Date.now()});toast(memberName(mId)+' → '+taskName(tId)+' 제출 처리','success');}
-  poll();
+function renderAll(){renderDashboard();renderAssignments();renderSubmit();renderMy();renderAdmin();renderMembers();renderNotices();applyMode()}
+function renderDashboard(){
+  const c=calc();
+  $('stat-participation').innerHTML=`${c.participation}<span>%</span>`; $('stat-total-rate').innerHTML=`${c.totalRate}<span>%</span>`; $('stat-week-rate').innerHTML=`${c.weekRate}<span>%</span>`; $('stat-missing').innerHTML=`${c.missing.length}<span>명</span>`;
+  $('stat-week-label').textContent=c.cur?`${c.cur.week||''} ${c.cur.title}`:'최근 등록 과제 없음';
+  $('current-week-badge').textContent=c.cur?c.cur.week||'이번 주':'과제 없음';
+  if(!c.cur){$('current-assignment').innerHTML='<div class="empty">아직 등록된 과제가 없습니다.</div>'} else {
+    const sub=getSubmissionAny(myId(),c.cur.id);
+    $('current-assignment').innerHTML=`<div class="assignment-card">
+      <div class="assignment-top"><div><div class="week">${esc(c.cur.week||'')}</div><div class="assignment-title">${esc(c.cur.title)}</div></div>${sub?'<span class="badge badge-done">제출 완료</span>':'<span class="badge badge-warn">미제출</span>'}</div>
+      <div class="assignment-desc">${esc(c.cur.desc||'과제 설명이 없습니다.')}</div>
+      <div class="assignment-meta"><span>🛠 ${esc(c.cur.tool||'도구 미정')}</span><span>⏰ ${dueText(c.cur.due)}</span><span>📄 안내 HTML</span><span>📦 실습파일</span><span>📎 제출파일</span><span>🖼 캡쳐 이미지</span></div>${renderAssignmentResources(c.cur)}
+      <button class="btn btn-primary" onclick="showPage('submit')">바로 제출하기</button></div>`;
+  }
+  $('my-progress').innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:10px"><strong>김정현님의 진행률</strong><span class="mono">${c.myDone}/${c.as.length}개</span></div><div class="progress"><div class="bar ${rateClass(c.myRate)}" style="width:${c.myRate}%"></div></div><div class="helper" style="margin-top:12px">현재 계정은 admin 권한이지만 참여자 과제 제출 대상에도 포함됩니다.</div><div class="check-list" style="margin-top:14px">${c.as.slice(-4).reverse().map(a=>`<div class="check-item"><div class="check-icon">${getSub(myId(),a.id)?'✓':'!'}</div><div><strong>${esc(a.week||'')} ${esc(a.title)}</strong><div class="helper">${getSub(myId(),a.id)?'제출 완료':'아직 제출하지 않았습니다.'}</div></div></div>`).join('')||'<div class="empty">과제가 없습니다.</div>'}</div>`;
+  $('recent-notices').innerHTML=notices().slice(0,3).map(n=>`<div class="notice-card"><strong>${esc(n.title)}</strong><div class="notice-body">${esc(n.content)}</div><div class="helper">${fmtDate(n.createdAt)}</div></div>`).join('')||'<div class="empty">공지사항이 없습니다.</div>';
+  $('recent-submissions').innerHTML=submissions().slice(0,5).map(s=>`<div class="check-item"><div class="check-icon">✓</div><div><strong>${memberName(s.memberId)}</strong><div class="helper">${assignmentTitle(s.assignmentId)} · ${fmtDate(s.submittedAt)}</div></div></div>`).join('')||'<div class="empty">제출 내역이 없습니다.</div>';
 }
-
-document.getElementById('btn-add-memo').addEventListener('click', async () => {
-  const title=document.getElementById('memo-title').value.trim();
-  if(!title){toast('제목을 입력해주세요.','error');return;}
-  const id='n_'+Date.now();
-  await fbSet('memos/'+id,{id,tag:document.getElementById('memo-tag').value,title,content:document.getElementById('memo-content').value.trim(),createdAt:Date.now()});
-  ['memo-title','memo-content'].forEach(x=>document.getElementById(x).value='');
-  toast('메모가 저장되었습니다.','success'); poll();
-});
-
-async function delMemo(id) {
-  await fbDelete('memos/'+id);
-  toast('메모가 삭제되었습니다.','info'); poll();
+function renderAssignments(){
+  $('assignment-cards').innerHTML=assignments().map(a=>{
+    const r=members().length?Math.round(members().filter(m=>getSub(m.id,a.id)).length/members().length*100):0;
+    const my=getSub(myId(),a.id);
+    return `<div class="assignment-card"><div class="assignment-top"><div><div class="week">${esc(a.week||'')}</div><div class="assignment-title">${esc(a.title)}</div></div>${my?'<span class="badge badge-done">나 제출완료</span>':'<span class="badge badge-warn">나 미제출</span>'}</div><div class="assignment-desc">${esc(a.desc||'')}</div><div class="assignment-meta"><span>🛠 ${esc(a.tool||'미정')}</span><span>⏰ ${dueText(a.due)}</span><span>📄 ${a.guideUrl?'안내 있음':'안내 없음'}</span><span>📦 ${parsePracticeFiles(a.practiceFiles).length}개</span></div><div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span>전체 제출률</span><span class="mono">${r}%</span></div><div class="progress"><div class="bar ${rateClass(r)}" style="width:${r}%"></div></div></div><div style="display:flex;gap:8px;margin-top:auto"><button class="btn btn-sm btn-primary" onclick="selectAssignmentAndSubmit('${a.id}')">상세 보기/제출</button><button class="btn btn-sm btn-danger admin-only" onclick="deleteAssignment('${a.id}')">삭제</button></div></div>`
+  }).join('')||'<div class="empty" style="grid-column:1/-1">등록된 과제가 없습니다.</div>';
 }
+function renderSubmit(){
+  const as=assignments(), ms=members();
+  const prevA=$('submit-assignment').value, prevM=$('submit-member').value;
+  $('submit-assignment').innerHTML=as.map(a=>`<option value="${a.id}">${esc(a.week||'')} ${esc(a.title)}</option>`).join('')||'<option value="">과제 없음</option>';
+  $('submit-member').innerHTML=ms.map(m=>`<option value="${m.id}">${esc(m.name)} ${m.role==='admin'?'(운영진)':''}</option>`).join('')||'<option value="">멤버 없음</option>';
+  if(prevA)$('submit-assignment').value=prevA; if(prevM)$('submit-member').value=prevM; else $('submit-member').value=myId();
+  renderAssignmentDetail();
+}
+function renderAssignmentDetail(){
+  const a=state.assignments[$('submit-assignment').value];
+  if(!a){$('assignment-detail-box').innerHTML='<div class="empty">과제를 먼저 등록해주세요.</div>';return}
+  $('assignment-detail-box').innerHTML=`<div class="assignment-card"><div class="week">${esc(a.week||'')}</div><div class="assignment-title">${esc(a.title)}</div><div class="assignment-desc">${esc(a.desc||'설명이 없습니다.')}</div><div class="assignment-meta"><span>🛠 ${esc(a.tool||'도구 미정')}</span><span>📅 ${a.due||'마감일 미정'}</span><span>⏰ ${dueText(a.due)}</span></div>${renderAssignmentResources(a)}</div>`;
+}
+$('submit-assignment').addEventListener('change',renderAssignmentDetail);
+function renderMy(){
+  const rows=assignments().map(a=>{const s=getSubmissionAny(myId(),a.id);return `<tr><td><span class="badge badge-brand">${esc(a.week||'')}</span></td><td><strong>${esc(a.title)}</strong><div class="helper">${esc(a.tool||'')}</div></td><td>${s?'<span class="badge badge-done">제출 완료</span>':'<span class="badge badge-warn">미제출</span>'}</td><td>${s&&s.githubUrl?`<a href="${esc(s.githubUrl)}" target="_blank">GitHub</a>`:'—'}</td><td>${s?(s.fileNames||[]).join(', ')||'—':'—'}</td><td class="mono">${s?fmtDate(s.submittedAt):'—'}</td></tr>`}).join('');
+  $('my-submission-list').innerHTML=`<div class="table-wrap"><table><thead><tr><th>주차</th><th>과제</th><th>상태</th><th>GitHub 선택</th><th>파일</th><th>제출일</th></tr></thead><tbody>${rows||'<tr><td colspan="6" class="empty">과제가 없습니다.</td></tr>'}</tbody></table></div>`;
+}
+function renderAdmin(){
+  const c=calc(); $('admin-members').innerHTML=`${c.ms.length}<span>명</span>`; $('admin-assignments').innerHTML=`${c.as.length}<span>개</span>`; $('admin-submissions').innerHTML=`${c.ss.length}<span>건</span>`; $('admin-missing').innerHTML=`${c.missing.length}<span>명</span>`;
+  $('weekly-rates').innerHTML=c.as.map(a=>{const r=c.ms.length?Math.round(c.ms.filter(m=>getSub(m.id,a.id)).length/c.ms.length*100):0;return `<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px"><strong>${esc(a.week||'')} ${esc(a.title)}</strong><span class="mono muted">${r}%</span></div><div class="progress"><div class="bar ${rateClass(r)}" style="width:${r}%"></div></div></div>`}).join('')||'<div class="empty">과제가 없습니다.</div>';
+  $('missing-list').innerHTML=c.cur?c.missing.map(m=>`<div class="check-item"><div class="check-icon">!</div><div><strong>${esc(m.name)}</strong><div class="helper">${esc(m.email||'이메일 없음')} · ${esc(c.cur.week||'')} 미제출</div></div></div>`).join('')||'<div class="empty">이번 주 미제출자가 없습니다.</div>':'<div class="empty">기준 과제가 없습니다.</div>';
+  $('all-submission-tbody').innerHTML=submissions().map(s=>`<tr><td>${memberName(s.memberId)}</td><td>${assignmentTitle(s.assignmentId)}</td><td><span class="badge ${s.status==='draft'?'badge-warn':s.status==='late'?'badge-red':'badge-done'}">${s.status}</span></td><td>${s.githubUrl?`<a href="${esc(s.githubUrl)}" target="_blank">링크</a>`:'—'}</td><td>${(s.fileNames||[]).join(', ')||'—'}</td><td>${(s.imageNames||[]).join(', ')||'—'}</td><td class="mono">${fmtDate(s.submittedAt)}</td><td><button class="btn btn-sm btn-danger" onclick="deleteSubmission('${s.id}')">삭제</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty">제출 내역이 없습니다.</td></tr>';
+}
+function renderMembers(){
+  $('member-list').innerHTML=members().map(m=>{const done=assignments().filter(a=>getSub(m.id,a.id)).length;const rate=assignments().length?Math.round(done/assignments().length*100):0;return `<div class="member-card"><div class="member-actions"><button class="icon-btn" onclick="toggleRole('${m.id}')">${m.role==='admin'?'운영':'참여'}</button><button class="icon-btn" onclick="deleteMember('${m.id}')">✕</button></div><div class="profile-top"><div class="avatar">${esc(m.name.slice(0,1))}</div><div><div class="profile-name">${esc(m.name)}</div><div class="profile-mail">${esc(m.email||'')}</div></div></div><div style="margin-top:12px"><span class="badge ${m.role==='admin'?'badge-brand':'badge-blue'}">${m.role}</span> <span class="helper">${esc(m.department||'')}</span></div><div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span>진행률</span><span class="mono">${done}/${assignments().length} (${rate}%)</span></div><div class="progress"><div class="bar ${rateClass(rate)}" style="width:${rate}%"></div></div></div></div>`}).join('')||'<div class="empty">등록된 멤버가 없습니다.</div>';
+}
+function renderNotices(){
+  $('notice-list').innerHTML=notices().map(n=>`<div class="notice-card"><div style="display:flex;justify-content:space-between;gap:10px"><strong>${esc(n.title)}</strong><button class="btn btn-sm btn-danger admin-only" onclick="deleteNotice('${n.id}')">삭제</button></div><div class="notice-body">${esc(n.content)}</div><div class="helper">${fmtDate(n.createdAt)}</div></div>`).join('')||'<div class="empty">등록된 공지사항이 없습니다.</div>';
+}
+function selectAssignmentAndSubmit(id){showPage('submit');setTimeout(()=>{$('submit-assignment').value=id;renderAssignmentDetail()},0)}
 
-// ─── Init ─────────────────────────────────────────────
-const savedUrl = localStorage.getItem('ai_hub_firebase_url');
-if(savedUrl) {
-  DB_URL = savedUrl;
-  fbUrlInput.value = savedUrl;
-  fetch(DB_URL+'.json')
-    .then(r=>{ if(!r.ok) throw new Error(); hideSetup(); setConnStatus(true); startPolling(); toast('Firebase 연결됨','success'); })
-    .catch(()=>{ showSetup(); toast('저장된 URL로 연결 실패. 다시 입력해주세요.','error'); });
+$('btn-add-assignment').onclick=async()=>{const title=$('a-title').value.trim(); if(!title){toast('과제명을 입력해주세요','error');return} const id='a_'+Date.now(); await fbSet('assignments/'+id,{id,title,week:$('a-week').value.trim(),tool:$('a-tool').value.trim(),due:$('a-due').value,desc:$('a-desc').value.trim(),guideUrl:$('a-guide-url').value.trim(),guideName:$('a-guide-name').value.trim(),practiceFiles:$('a-practice-files').value.trim(),createdAt:Date.now()}); ['a-title','a-week','a-tool','a-due','a-desc','a-guide-url','a-guide-name','a-practice-files'].forEach(id=>$(id).value=''); toast('과제가 추가되었습니다','success'); poll()}
+async function deleteAssignment(id){if(!confirm('과제와 관련 제출 내역을 삭제할까요?'))return; await fbDelete('assignments/'+id); for(const s of submissions().filter(s=>s.assignmentId===id)) await fbDelete('submissions/'+s.id); toast('과제가 삭제되었습니다','info'); poll()}
+$('btn-save-submission').onclick=async()=>{const aId=$('submit-assignment').value,mId=$('submit-member').value; if(!aId||!mId){toast('과제와 제출자를 선택해주세요','error');return} const old=getSubmissionAny(mId,aId); const id=old?old.id:'s_'+Date.now(); const fileNames=[...$('submit-files').files].map(f=>f.name); const imageNames=[...$('submit-images').files].map(f=>f.name); await fbSet('submissions/'+id,{id,assignmentId:aId,memberId:mId,status:$('submit-status').value,githubUrl:$('submit-github').value.trim(),memo:$('submit-memo').value.trim(),fileNames,imageNames,submittedAt:Date.now()}); toast('제출이 저장되었습니다','success'); poll(); showPage('my')}
+$('btn-clear-submit').onclick=()=>{['submit-github','submit-memo','submit-files','submit-images'].forEach(id=>$(id).value='');toast('입력값을 초기화했습니다','info')}
+async function deleteSubmission(id){if(!confirm('제출 내역을 삭제할까요?'))return; await fbDelete('submissions/'+id); toast('제출 내역이 삭제되었습니다','info'); poll()}
+$('btn-add-member').onclick=async()=>{const name=$('m-name').value.trim(); if(!name){toast('이름을 입력해주세요','error');return} const id='m_'+Date.now(); await fbSet('members/'+id,{id,name,email:$('m-email').value.trim(),department:$('m-dept').value.trim(),role:$('m-role').value,joinedAt:Date.now()}); ['m-name','m-email','m-dept'].forEach(id=>$(id).value=''); toast('멤버가 추가되었습니다','success'); poll()}
+async function toggleRole(id){const m=state.members[id]; if(!m)return; m.role=m.role==='admin'?'member':'admin'; await fbSet('members/'+id,m); toast('권한이 변경되었습니다','success'); poll()}
+async function deleteMember(id){if(id===CURRENT_USER_ID){toast('현재 운영진 계정은 삭제할 수 없습니다','error');return} if(!confirm('멤버와 제출 내역을 삭제할까요?'))return; await fbDelete('members/'+id); for(const s of submissions().filter(s=>s.memberId===id)) await fbDelete('submissions/'+s.id); toast('멤버가 삭제되었습니다','info'); poll()}
+$('btn-add-notice').onclick=async()=>{const title=$('n-title').value.trim(); if(!title){toast('공지 제목을 입력해주세요','error');return} const id='n_'+Date.now(); await fbSet('notices/'+id,{id,title,content:$('n-content').value.trim(),createdAt:Date.now()}); $('n-title').value='';$('n-content').value='';toast('공지사항이 저장되었습니다','success');poll()}
+async function deleteNotice(id){await fbDelete('notices/'+id);toast('공지가 삭제되었습니다','info');poll()}
+
+const fixedUrl = normalizedFixedUrl();
+const saved=localStorage.getItem('study_dashboard_firebase_url');
+if(fixedUrl){
+  DB_URL=fixedUrl;
+  $('fb-url-input').value=fixedUrl;
+  localStorage.setItem('study_dashboard_firebase_url', fixedUrl);
+  hideSetup();
+  startPolling();
+} else if(saved){
+  DB_URL=saved;
+  $('fb-url-input').value=saved;
+  hideSetup();
+  startPolling();
 } else {
   showSetup();
 }
