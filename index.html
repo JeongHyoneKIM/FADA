@@ -198,11 +198,15 @@ body.admin-mode .admin-only{display:revert}
         </div>
         <div class="field" style="margin-top:12px"><label>과제 설명</label><textarea id="a-desc" placeholder="과제 목적, 제출 방식, 참고 링크 등을 입력하세요."></textarea></div>
         <div class="form-grid" style="margin-top:12px">
-          <div class="field"><label>과제 안내 HTML 경로 또는 URL</label><input id="a-guide-url" placeholder="예: file:///C:/.../exif_practice_guide.html 또는 Firebase Storage 다운로드 URL"></div>
+          <div class="field"><label>과제 안내 HTML 경로 또는 URL</label><input id="a-guide-url" placeholder="URL 직접 입력 또는 아래 파일 업로드 사용"></div>
           <div class="field"><label>과제 안내 파일명</label><input id="a-guide-name" placeholder="예: exif_practice_guide.html"></div>
         </div>
-        <div class="field" style="margin-top:12px"><label>실습파일 다운로드 링크</label><textarea id="a-practice-files" placeholder="한 줄에 하나씩 입력하세요. 예: sample_image.zip|https://... 또는 https://...
-※ 다른 노트북에서 다운받게 하려면 file:/// 경로가 아니라 Firebase Storage/Drive 등 다운로드 가능한 URL이 필요합니다."></textarea></div>
+        <div class="form-grid" style="margin-top:12px">
+          <div class="upload-zone">📄 과제 안내 HTML 업로드<br><span class="helper">html 파일을 선택하면 Firebase Storage에 저장됩니다.</span><input id="a-guide-file" type="file" accept=".html,.htm,text/html"></div>
+          <div class="upload-zone">📦 실습파일 업로드<br><span class="helper">ZIP, PDF, XLSX, 이미지 등 여러 개 선택 가능</span><input id="a-practice-upload-files" type="file" multiple></div>
+        </div>
+        <div class="field" style="margin-top:12px"><label>실습파일 다운로드 링크 <span class="helper">직접 입력도 가능</span></label><textarea id="a-practice-files" placeholder="한 줄에 하나씩 입력하세요. 예: sample_image.zip|https://...
+※ 파일 업로드를 사용하면 이 칸에 자동으로 다운로드 URL이 추가됩니다."></textarea></div>
         <div style="margin-top:12px"><button class="btn btn-primary" id="btn-add-assignment">+ 과제 추가</button></div>
       </div>
       <div class="grid-3" id="assignment-cards"></div>
@@ -228,7 +232,7 @@ body.admin-mode .admin-only{display:revert}
             <div class="upload-zone">🖼 캡쳐 이미지 업로드 영역<br><span class="helper">PNG, JPG 등</span><input id="submit-images" type="file" multiple accept="image/*"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn btn-primary" id="btn-save-submission">제출하기</button><button class="btn" id="btn-clear-submit">입력 초기화</button></div>
-          <p class="helper" style="margin-top:12px">중요: 현재 단일 HTML 데모는 제출 파일명만 DB에 기록합니다. 참여자 제출 파일과 운영진이 올리는 실습파일을 다른 노트북에서 실제 다운로드하려면 Firebase Storage 업로드 기능을 연결해야 합니다.</p>
+          <p class="helper" style="margin-top:12px">선택한 파일은 Firebase Storage에 업로드되고, 운영진 화면에서 다른 노트북으로도 다운로드할 수 있는 URL이 저장됩니다.</p>
           <div class="storage-note" style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--blue-bg);font-size:12px;line-height:1.6;color:var(--muted)">
             운영진 다운로드 구조: 참여자 파일 → Firebase Storage 저장 → 다운로드 URL을 Database에 저장 → 운영진 화면에서 다운로드 버튼으로 확인
           </div>
@@ -292,6 +296,7 @@ let DB_URL = '';
 // 예: const FIXED_FIREBASE_DATABASE_URL = 'https://your-project-default-rtdb.firebaseio.com/';
 // URL을 넣고 GitHub Pages에 업로드하면 참여자는 Firebase URL을 입력하지 않아도 됩니다.
 const FIXED_FIREBASE_DATABASE_URL = 'https://aiproject-b8d0f-default-rtdb.firebaseio.com/';
+const FIXED_FIREBASE_STORAGE_BUCKET = 'aiproject-b8d0f.firebasestorage.app';
 let demoMode = false;
 let pollTimer = null;
 let currentMode = 'member';
@@ -375,6 +380,48 @@ function calc(){
 async function fbGet(path=''){const res=await fetch(DB_URL+path+'.json'); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
 async function fbSet(path,data){ if(demoMode){setLocal(path,data); renderAll(); return data} const res=await fetch(DB_URL+path+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
 async function fbDelete(path){ if(demoMode){deleteLocal(path); renderAll(); return} const res=await fetch(DB_URL+path+'.json',{method:'DELETE'}); if(!res.ok)throw new Error('HTTP '+res.status)}
+
+function safeFileName(name){
+  return String(name || 'file').replace(/[\/:*?"<>|#%{}\^~[\]`]/g,'_');
+}
+function storagePath(type, fileName, meta={}){
+  const week = safeFileName(meta.week || 'common');
+  const assignmentId = safeFileName(meta.assignmentId || 'unassigned');
+  const memberId = safeFileName(meta.memberId || 'unknown');
+  const stamp = Date.now();
+  if(type === 'assignment-guide') return `assignments/${week}/${assignmentId}/guide/${stamp}_${safeFileName(fileName)}`;
+  if(type === 'assignment-practice') return `assignments/${week}/${assignmentId}/practice/${stamp}_${safeFileName(fileName)}`;
+  if(type === 'submission-image') return `submissions/${assignmentId}/${memberId}/images/${stamp}_${safeFileName(fileName)}`;
+  return `submissions/${assignmentId}/${memberId}/files/${stamp}_${safeFileName(fileName)}`;
+}
+function publicStorageUrl(path){
+  return `https://firebasestorage.googleapis.com/v0/b/${FIXED_FIREBASE_STORAGE_BUCKET}/o/${encodeURIComponent(path)}?alt=media`;
+}
+async function uploadOneFile(file, type, meta={}){
+  if(!file) return null;
+  const path = storagePath(type, file.name, meta);
+  const url = `https://firebasestorage.googleapis.com/v0/b/${FIXED_FIREBASE_STORAGE_BUCKET}/o?uploadType=media&name=${encodeURIComponent(path)}`;
+  const res = await fetch(url, { method:'POST', headers:{ 'Content-Type': file.type || 'application/octet-stream' }, body:file });
+  if(!res.ok){
+    const msg = await res.text().catch(()=>res.statusText);
+    throw new Error(`Storage 업로드 실패: ${file.name} (${res.status}) ${msg}`);
+  }
+  return { name:file.name, url:publicStorageUrl(path), path, size:file.size, type:file.type || 'application/octet-stream', uploadedAt:Date.now() };
+}
+async function uploadFileList(fileList, type, meta={}){
+  const files = Array.from(fileList || []);
+  const results = [];
+  for(const f of files){ results.push(await uploadOneFile(f, type, meta)); }
+  return results.filter(Boolean);
+}
+function downloadLinks(items){
+  const arr = Array.isArray(items) ? items : [];
+  if(!arr.length) return '—';
+  return arr.map(f=>`<a href="${esc(f.url)}" target="_blank" download>${esc(f.name || '다운로드')}</a>`).join('<br>');
+}
+function mergeFiles(oldItems, newItems){
+  return [...(Array.isArray(oldItems)?oldItems:[]), ...(Array.isArray(newItems)?newItems:[])];
+}
 function setLocal(path,data){const [k,id]=path.split('/'); state[k][id]=data}
 function deleteLocal(path){const [k,id]=path.split('/'); delete state[k][id]}
 async function poll(){
@@ -481,14 +528,14 @@ function renderAssignmentDetail(){
 }
 $('submit-assignment').addEventListener('change',renderAssignmentDetail);
 function renderMy(){
-  const rows=assignments().map(a=>{const s=getSubmissionAny(myId(),a.id);return `<tr><td><span class="badge badge-brand">${esc(a.week||'')}</span></td><td><strong>${esc(a.title)}</strong><div class="helper">${esc(a.tool||'')}</div></td><td>${s?'<span class="badge badge-done">제출 완료</span>':'<span class="badge badge-warn">미제출</span>'}</td><td>${s&&s.githubUrl?`<a href="${esc(s.githubUrl)}" target="_blank">GitHub</a>`:'—'}</td><td>${s?(s.fileNames||[]).join(', ')||'—':'—'}</td><td class="mono">${s?fmtDate(s.submittedAt):'—'}</td></tr>`}).join('');
+  const rows=assignments().map(a=>{const s=getSubmissionAny(myId(),a.id);return `<tr><td><span class="badge badge-brand">${esc(a.week||'')}</span></td><td><strong>${esc(a.title)}</strong><div class="helper">${esc(a.tool||'')}</div></td><td>${s?'<span class="badge badge-done">제출 완료</span>':'<span class="badge badge-warn">미제출</span>'}</td><td>${s&&s.githubUrl?`<a href="${esc(s.githubUrl)}" target="_blank">GitHub</a>`:'—'}</td><td>${s?downloadLinks(s.files)||((s.fileNames||[]).join(', ')||'—'):'—'}</td><td class="mono">${s?fmtDate(s.submittedAt):'—'}</td></tr>`}).join('');
   $('my-submission-list').innerHTML=`<div class="table-wrap"><table><thead><tr><th>주차</th><th>과제</th><th>상태</th><th>GitHub 선택</th><th>파일</th><th>제출일</th></tr></thead><tbody>${rows||'<tr><td colspan="6" class="empty">과제가 없습니다.</td></tr>'}</tbody></table></div>`;
 }
 function renderAdmin(){
   const c=calc(); $('admin-members').innerHTML=`${c.ms.length}<span>명</span>`; $('admin-assignments').innerHTML=`${c.as.length}<span>개</span>`; $('admin-submissions').innerHTML=`${c.ss.length}<span>건</span>`; $('admin-missing').innerHTML=`${c.missing.length}<span>명</span>`;
   $('weekly-rates').innerHTML=c.as.map(a=>{const r=c.ms.length?Math.round(c.ms.filter(m=>getSub(m.id,a.id)).length/c.ms.length*100):0;return `<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px"><strong>${esc(a.week||'')} ${esc(a.title)}</strong><span class="mono muted">${r}%</span></div><div class="progress"><div class="bar ${rateClass(r)}" style="width:${r}%"></div></div></div>`}).join('')||'<div class="empty">과제가 없습니다.</div>';
   $('missing-list').innerHTML=c.cur?c.missing.map(m=>`<div class="check-item"><div class="check-icon">!</div><div><strong>${esc(m.name)}</strong><div class="helper">${esc(m.email||'이메일 없음')} · ${esc(c.cur.week||'')} 미제출</div></div></div>`).join('')||'<div class="empty">이번 주 미제출자가 없습니다.</div>':'<div class="empty">기준 과제가 없습니다.</div>';
-  $('all-submission-tbody').innerHTML=submissions().map(s=>`<tr><td>${memberName(s.memberId)}</td><td>${assignmentTitle(s.assignmentId)}</td><td><span class="badge ${s.status==='draft'?'badge-warn':s.status==='late'?'badge-red':'badge-done'}">${s.status}</span></td><td>${s.githubUrl?`<a href="${esc(s.githubUrl)}" target="_blank">링크</a>`:'—'}</td><td>${(s.fileNames||[]).join(', ')||'—'}</td><td>${(s.imageNames||[]).join(', ')||'—'}</td><td class="mono">${fmtDate(s.submittedAt)}</td><td><button class="btn btn-sm btn-danger" onclick="deleteSubmission('${s.id}')">삭제</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty">제출 내역이 없습니다.</td></tr>';
+  $('all-submission-tbody').innerHTML=submissions().map(s=>`<tr><td>${memberName(s.memberId)}</td><td>${assignmentTitle(s.assignmentId)}</td><td><span class="badge ${s.status==='draft'?'badge-warn':s.status==='late'?'badge-red':'badge-done'}">${s.status}</span></td><td>${s.githubUrl?`<a href="${esc(s.githubUrl)}" target="_blank">링크</a>`:'—'}</td><td>${downloadLinks(s.files)||((s.fileNames||[]).join(', ')||'—')}</td><td>${downloadLinks(s.images)||((s.imageNames||[]).join(', ')||'—')}</td><td class="mono">${fmtDate(s.submittedAt)}</td><td><button class="btn btn-sm btn-danger" onclick="deleteSubmission('${s.id}')">삭제</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty">제출 내역이 없습니다.</td></tr>';
 }
 function renderMembers(){
   $('member-list').innerHTML=members().map(m=>{const done=assignments().filter(a=>getSub(m.id,a.id)).length;const rate=assignments().length?Math.round(done/assignments().length*100):0;return `<div class="member-card"><div class="member-actions"><button class="icon-btn" title="멤버 정보 수정" onclick="startEditMember('${m.id}')">수정</button><button class="icon-btn" title="권한 전환" onclick="toggleRole('${m.id}')">${m.role==='admin'?'운영':'참여'}</button><button class="icon-btn" title="멤버 삭제" onclick="deleteMember('${m.id}')">✕</button></div><div class="profile-top"><div class="avatar">${esc(m.name.slice(0,1))}</div><div><div class="profile-name">${esc(m.name)}</div><div class="profile-mail">${esc(m.email||'')}</div></div></div><div style="margin-top:12px"><span class="badge ${m.role==='admin'?'badge-brand':'badge-blue'}">${m.role}</span> <span class="helper">${esc(m.department||'')}</span></div><div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span>진행률</span><span class="mono">${done}/${assignments().length} (${rate}%)</span></div><div class="progress"><div class="bar ${rateClass(rate)}" style="width:${rate}%"></div></div></div></div>`}).join('')||'<div class="empty">등록된 멤버가 없습니다.</div>';
@@ -498,9 +545,47 @@ function renderNotices(){
 }
 function selectAssignmentAndSubmit(id){showPage('submit');setTimeout(()=>{$('submit-assignment').value=id;renderAssignmentDetail()},0)}
 
-$('btn-add-assignment').onclick=async()=>{const title=$('a-title').value.trim(); if(!title){toast('과제명을 입력해주세요','error');return} const id='a_'+Date.now(); await fbSet('assignments/'+id,{id,title,week:$('a-week').value.trim(),tool:$('a-tool').value.trim(),due:$('a-due').value,desc:$('a-desc').value.trim(),guideUrl:$('a-guide-url').value.trim(),guideName:$('a-guide-name').value.trim(),practiceFiles:$('a-practice-files').value.trim(),createdAt:Date.now()}); ['a-title','a-week','a-tool','a-due','a-desc','a-guide-url','a-guide-name','a-practice-files'].forEach(id=>$(id).value=''); toast('과제가 추가되었습니다','success'); poll()}
+$('btn-add-assignment').onclick=async()=>{
+  const title=$('a-title').value.trim(); if(!title){toast('과제명을 입력해주세요','error');return}
+  const id='a_'+Date.now();
+  const week=$('a-week').value.trim();
+  const meta={assignmentId:id,week};
+  let guideUrl=$('a-guide-url').value.trim();
+  let guideName=$('a-guide-name').value.trim();
+  let practiceText=$('a-practice-files').value.trim();
+  try{
+    $('btn-add-assignment').disabled=true; $('btn-add-assignment').textContent='업로드 중...';
+    const guideFile=$('a-guide-file').files[0];
+    if(guideFile){
+      const uploaded=await uploadOneFile(guideFile,'assignment-guide',meta);
+      guideUrl=uploaded.url; guideName=guideName || uploaded.name;
+    }
+    const practiceUploaded=await uploadFileList($('a-practice-upload-files').files,'assignment-practice',meta);
+    if(practiceUploaded.length){
+      const uploadedLines=practiceUploaded.map(f=>`${f.name}|${f.url}`).join('
+');
+      practiceText = [practiceText, uploadedLines].filter(Boolean).join('
+');
+    }
+    await fbSet('assignments/'+id,{id,title,week,tool:$('a-tool').value.trim(),due:$('a-due').value,desc:$('a-desc').value.trim(),guideUrl,guideName,practiceFiles:practiceText,createdAt:Date.now()});
+    ['a-title','a-week','a-tool','a-due','a-desc','a-guide-url','a-guide-name','a-practice-files','a-guide-file','a-practice-upload-files'].forEach(id=>$(id).value='');
+    toast('과제가 추가되었습니다','success'); poll();
+  }catch(e){toast(e.message || '과제 등록 중 오류가 발생했습니다','error')}
+  finally{$('btn-add-assignment').disabled=false; $('btn-add-assignment').textContent='+ 과제 추가'}
+}
 async function deleteAssignment(id){if(!confirm('과제와 관련 제출 내역을 삭제할까요?'))return; await fbDelete('assignments/'+id); for(const s of submissions().filter(s=>s.assignmentId===id)) await fbDelete('submissions/'+s.id); toast('과제가 삭제되었습니다','info'); poll()}
-$('btn-save-submission').onclick=async()=>{const aId=$('submit-assignment').value,mId=$('submit-member').value; if(!aId||!mId){toast('과제와 제출자를 선택해주세요','error');return} const old=getSubmissionAny(mId,aId); const id=old?old.id:'s_'+Date.now(); const fileNames=[...$('submit-files').files].map(f=>f.name); const imageNames=[...$('submit-images').files].map(f=>f.name); await fbSet('submissions/'+id,{id,assignmentId:aId,memberId:mId,status:$('submit-status').value,githubUrl:$('submit-github').value.trim(),memo:$('submit-memo').value.trim(),fileNames,imageNames,submittedAt:Date.now()}); toast('제출이 저장되었습니다','success'); poll(); showPage('my')}
+$('btn-save-submission').onclick=async()=>{
+  const aId=$('submit-assignment').value,mId=$('submit-member').value; if(!aId||!mId){toast('과제와 제출자를 선택해주세요','error');return}
+  const old=getSubmissionAny(mId,aId); const id=old?old.id:'s_'+Date.now();
+  try{
+    $('btn-save-submission').disabled=true; $('btn-save-submission').textContent='업로드 중...';
+    const files=await uploadFileList($('submit-files').files,'submission-file',{assignmentId:aId,memberId:mId});
+    const images=await uploadFileList($('submit-images').files,'submission-image',{assignmentId:aId,memberId:mId});
+    await fbSet('submissions/'+id,{id,assignmentId:aId,memberId:mId,status:$('submit-status').value,githubUrl:$('submit-github').value.trim(),memo:$('submit-memo').value.trim(),files:mergeFiles(old&&old.files,files),images:mergeFiles(old&&old.images,images),fileNames:mergeFiles(old&&old.files,files).map(f=>f.name),imageNames:mergeFiles(old&&old.images,images).map(f=>f.name),submittedAt:Date.now()});
+    toast('제출 파일이 Storage에 업로드되고 저장되었습니다','success'); poll(); showPage('my')
+  }catch(e){toast(e.message || '제출 저장 중 오류가 발생했습니다','error')}
+  finally{$('btn-save-submission').disabled=false; $('btn-save-submission').textContent='제출하기'}
+}
 $('btn-clear-submit').onclick=()=>{['submit-github','submit-memo','submit-files','submit-images'].forEach(id=>$(id).value='');toast('입력값을 초기화했습니다','info')}
 async function deleteSubmission(id){if(!confirm('제출 내역을 삭제할까요?'))return; await fbDelete('submissions/'+id); toast('제출 내역이 삭제되었습니다','info'); poll()}
 $('btn-add-member').onclick=async()=>{
