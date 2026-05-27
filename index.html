@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FADA_주차별 과제 제출 플랫폼 로그인</title>
+<title>FADA_소모임 관리 플랫폼</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -135,7 +135,7 @@ body.admin-mode .admin-only{display:revert}
 <div id="auth-overlay" class="auth-overlay">
   <div class="auth-card">
     <div class="setup-badge">FADA</div>
-    <h2>FADA_주차별 과제 제출 플랫폼 로그인</h2>
+    <h2>FADA_소모임 관리 플랫폼</h2>
     <p>Google 계정으로 로그인하면 대시보드에 접속할 수 있습니다.</p>
     <button class="btn btn-primary" id="btn-google-login" style="width:100%;justify-content:center">Google 계정으로 로그인</button>
     <div id="auth-config-warning" class="auth-config-warning">Firebase Google 로그인 설정이 적용되었습니다.</div>
@@ -148,7 +148,7 @@ body.admin-mode .admin-only{display:revert}
   <aside class="sidebar">
     <div class="logo">
       <div class="logo-mark">AI</div>
-      <div class="logo-title">FADA<span>주차별 과제 제출 플랫폼</span></div>
+      <div class="logo-title">FADA<span>소모임 관리 플랫폼</span></div>
     </div>
     <div class="profile-card">
       <div class="profile-top">
@@ -1097,12 +1097,29 @@ function initGoogleAuth(){
 $('btn-google-login').onclick=async()=>{
   if(!auth){toast('Firebase 웹 앱 설정값을 먼저 입력해주세요','error'); return;}
   const provider = new firebase.auth.GoogleAuthProvider();
-  try{ await auth.signInWithPopup(provider); }
-  catch(e){ toast(e.message || 'Google 로그인 실패', 'error'); }
+  provider.setCustomParameters({ prompt: 'select_account' });
+  try{
+    await auth.signInWithPopup(provider);
+  } catch(e){
+    const code = e && e.code ? String(e.code) : '';
+    if(code.includes('popup-blocked') || code.includes('popup-closed') || code.includes('cancelled-popup-request')){
+      try{ await auth.signInWithRedirect(provider); }
+      catch(err){ toast((err && err.message) || 'Google 로그인 실패', 'error'); }
+    } else {
+      toast((e && e.message) || 'Google 로그인 실패', 'error');
+    }
+  }
 };
-$('btn-logout').onclick=()=>{ if(auth) auth.signOut(); currentUser=null; currentMemberId=null; updateLoginProfile(); };
+$('btn-logout').onclick=async()=>{
+  try{ if(auth) await auth.signOut(); }catch(e){}
+  currentUser=null; currentMemberId=null; updateLoginProfile(); showAuthOverlay();
+};
 
 initGoogleAuth();
+if(window.firebase && firebase.apps && firebase.apps.length && firebase.auth){
+  firebase.auth().getRedirectResult().catch(e=>{ if(e && e.message) toast(e.message, 'error'); });
+}
+
 rotateMotivationQuote();
 setInterval(rotateMotivationQuote, 120000);
 </script>
