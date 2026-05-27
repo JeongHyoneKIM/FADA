@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FADA_주차별 과제 제출 플랫폼</title>
+<title>FADA_소모임 관리 플랫폼</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -66,6 +66,7 @@ h1{font-size:28px;letter-spacing:-.04em} .subtitle{font-size:14px;color:var(--mu
 .member-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}.member-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;position:relative}
 .member-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px}.icon-btn{border:0;background:#f3f4f6;border-radius:10px;padding:6px;cursor:pointer;color:var(--muted)}
 .notice-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:10px}.notice-body{white-space:pre-wrap;color:var(--muted);line-height:1.65;font-size:13px;margin-top:8px}
+.talk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}.talk-card{position:relative;overflow:hidden;background:linear-gradient(145deg,#fff 0%,#f8fbff 54%,#f7f2ff 100%);border:1px solid rgba(229,231,235,.96);border-radius:24px;padding:20px;min-height:210px;box-shadow:0 12px 28px rgba(15,23,42,.055)}.talk-card:before{content:'';position:absolute;right:-34px;top:-34px;width:110px;height:110px;border-radius:50%;background:rgba(117,103,248,.10)}.talk-category{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;background:var(--brand-bg);color:var(--brand);font-size:11px;font-weight:900}.talk-title{font-size:18px;font-weight:900;letter-spacing:-.03em;margin-top:14px;line-height:1.35}.talk-content{white-space:pre-wrap;color:var(--muted);line-height:1.68;font-size:13px;margin-top:10px}.talk-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px dashed var(--line2);margin-top:16px;padding-top:12px;font-size:12px;color:var(--soft)}.talk-write-panel{display:none}.talk-write-panel.show{display:block}.checkbox-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;font-weight:700}.checkbox-row input{width:auto}
 .detail-layout{display:grid;grid-template-columns:.95fr 1.05fr;gap:18px}.check-list{display:flex;flex-direction:column;gap:10px}.check-item{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px}.check-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--brand-bg);color:var(--brand);font-weight:900;flex:0 0 auto}
 .empty{padding:34px;text-align:center;color:var(--soft);font-size:13px}.toast-wrap{position:fixed;right:22px;bottom:22px;z-index:1200;display:flex;flex-direction:column;gap:9px}.toast{background:var(--text);color:#fff;border-radius:14px;padding:11px 14px;font-size:13px;box-shadow:0 16px 34px rgba(15,23,42,.2);animation:pop .18s ease}.toast.success{background:#166534}.toast.error{background:#991b1b}.toast.info{background:#3730a3}@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .helper{font-size:12px;color:var(--muted);line-height:1.65}.muted{color:var(--muted)}.mono{font-family:'DM Mono',monospace}.hidden{display:none!important}
@@ -150,6 +151,7 @@ body.admin-mode .admin-only{display:revert}
       <button class="nav-item admin-only" data-page="admin">📊 <span class="nav-label">운영진 대시보드</span></button>
       <button class="nav-item admin-only" data-page="members">👥 <span class="nav-label">멤버 관리</span></button>
       <button class="nav-item" data-page="notices">📢 <span class="nav-label">공지사항</span></button>
+      <button class="nav-item" data-page="talk">💬 <span class="nav-label">대화방</span></button>
     </nav>
     <div class="sidebar-bottom">
       <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-text">연결 대기</span></div>
@@ -161,7 +163,7 @@ body.admin-mode .admin-only{display:revert}
     <div class="topbar">
       <div>
         <div class="eyebrow" id="motivation-quote">작은 실천이 쌓이면 일하는 방식이 바뀝니다.</div>
-        <h1 id="page-title">참여자 메인 대시보드</h1>
+        <h1 id="page-title">Main 대시보드</h1>
         <p class="subtitle" id="page-subtitle">이번 주 과제와 전체 소모임 제출 현황을 한눈에 확인합니다.</p>
       </div>
       <div class="mode-switch">
@@ -299,12 +301,33 @@ body.admin-mode .admin-only{display:revert}
 
     <section class="page" id="page-notices">
       <div class="card admin-only">
-        <div class="card-head"><div><div class="card-title">공지 등록</div><div class="card-desc">Main 대시보드의 최근 공지에 함께 표시됩니다.</div></div></div>
+        <div class="card-head"><div><div class="card-title" id="notice-form-title">공지 등록</div><div class="card-desc">Main 대시보드의 최근 공지에 함께 표시됩니다. 등록한 공지는 수정할 수 있습니다.</div></div></div>
         <div class="field"><label>제목 *</label><input id="n-title" placeholder="예: 3주차 과제 제출 안내"></div>
         <div class="field" style="margin-top:12px"><label>내용</label><textarea id="n-content" placeholder="공지 내용을 입력하세요."></textarea></div>
-        <div style="margin-top:12px"><button class="btn btn-primary" id="btn-add-notice">공지 저장</button></div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="btn-add-notice">공지 저장</button><button class="btn" id="btn-cancel-notice-edit" style="display:none">수정 취소</button></div>
       </div>
       <div id="notice-list"></div>
+    </section>
+
+    <section class="page" id="page-talk">
+      <div class="card">
+        <div class="card-head">
+          <div><div class="card-title">대화방</div><div class="card-desc">건의사항, 아이디어, 느낀점을 카드뉴스처럼 남겨보세요. 익명으로도 작성할 수 있습니다.</div></div>
+          <button class="btn btn-primary" id="btn-toggle-talk-form">+ 글쓰기</button>
+        </div>
+        <div class="talk-write-panel" id="talk-write-panel">
+          <div class="form-grid">
+            <div class="field"><label>분류</label><select id="talk-category"><option value="💡 아이디어">💡 아이디어</option><option value="📝 느낀점">📝 느낀점</option><option value="📮 건의사항">📮 건의사항</option><option value="🙋 질문">🙋 질문</option><option value="👏 칭찬/공유">👏 칭찬/공유</option></select></div>
+            <div class="field"><label>제목 *</label><input id="talk-title" placeholder="예: 다음 실습에서 해보고 싶은 주제"></div>
+          </div>
+          <div class="field" style="margin-top:12px"><label>내용 *</label><textarea id="talk-content" placeholder="아이디어, 느낀점, 건의사항을 자유롭게 작성하세요."></textarea></div>
+          <div style="margin-top:12px;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+            <label class="checkbox-row"><input type="checkbox" id="talk-anonymous"> 익명으로 등록하기</label>
+            <div style="display:flex;gap:8px"><button class="btn" id="btn-cancel-talk">취소</button><button class="btn btn-primary" id="btn-add-talk">등록하기</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="talk-grid" id="talk-list"></div>
     </section>
   </main>
 </div>
@@ -337,7 +360,9 @@ let currentMode = 'member';
 let auth = null;
 let currentUser = null;
 let currentMemberId = null;
-const state = { members:{}, assignments:{}, submissions:{}, notices:{} };
+let editingMemberId = null;
+let editingNoticeId = null;
+const state = { members:{}, assignments:{}, submissions:{}, notices:{}, chats:{} };
 
 const sample = {
   members:{
@@ -358,6 +383,9 @@ const sample = {
   },
   notices:{
     n_1:{id:'n_1',title:'이번 주 과제 제출 안내',content:'과제 제출 시 결과 파일, 캡쳐 이미지, 간단한 회고 메모를 남겨주세요. GitHub 링크는 코딩 과제일 때만 선택으로 입력하면 됩니다.',createdAt:Date.now()-60000}
+  },
+  chats:{
+    c_1:{id:'c_1',category:'💡 아이디어',title:'다음 실습 아이디어',content:'업무 메일 초안 자동화 실습을 해보면 좋겠습니다.',anonymous:false,authorName:'김정현',authorEmail:'vdk7458@gmail.com',createdAt:Date.now()-45000}
   }
 };
 
@@ -367,6 +395,7 @@ function members(){return Object.values(state.members||{}).sort((a,b)=>(a.joined
 function assignments(){return Object.values(state.assignments||{}).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0))}
 function submissions(){return Object.values(state.submissions||{}).sort((a,b)=>(b.submittedAt||0)-(a.submittedAt||0))}
 function notices(){return Object.values(state.notices||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))}
+function chats(){return Object.values(state.chats||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))}
 function memberName(id){return state.members[id]?.name||'—'} function assignmentTitle(id){return state.assignments[id]?.title||'—'}
 function esc(s=''){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function parsePracticeFiles(raw){
@@ -470,7 +499,7 @@ async function poll(){
   if(demoMode)return;
   try{
     const data=await fbGet('');
-    ['members','assignments','submissions','notices'].forEach(k=>state[k]=(data&&data[k])?data[k]:{});
+    ['members','assignments','submissions','notices','chats'].forEach(k=>state[k]=(data&&data[k])?data[k]:{});
     ensureMe();
     renderAll(); setConn(true);
   }catch(e){setConn(false)}
@@ -536,7 +565,7 @@ function showPage(page){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   $('page-'+page).classList.add('active');
-  const titles={dashboard:['참여자 메인 대시보드','이번 주 과제와 전체 소모임 제출 현황을 한눈에 확인합니다.'],assignments:['주차별 과제 목록','참여자는 과제 등록 없이 주차별 과제를 확인하고 제출만 진행합니다.'],submit:['과제 상세 및 제출','텍스트 메모, 개인 파일, 캡쳐 이미지를 제출합니다. GitHub 링크는 선택입니다.'],my:['나의 제출 현황','내가 제출한 과제와 진행률을 확인합니다.'],admin:['운영진 관리 대시보드','전체 참여율, 제출률, 미제출자, 최근 제출 현황을 관리합니다.'],members:['멤버 관리','소모임 참여자와 운영진 권한을 관리합니다.'],notices:['공지사항','소모임 안내와 과제 관련 공지를 관리합니다.']};
+  const titles={dashboard:['Main 대시보드','이번 주 과제와 전체 소모임 제출 현황을 한눈에 확인합니다.'],assignments:['주차별 과제 목록','참여자는 과제 등록 없이 주차별 과제를 확인하고 제출만 진행합니다.'],submit:['과제 상세 및 제출','텍스트 메모, 개인 파일, 캡쳐 이미지를 제출합니다. GitHub 링크는 선택입니다.'],my:['나의 제출 현황','내가 제출한 과제와 진행률을 확인합니다.'],admin:['운영진 관리 대시보드','전체 참여율, 제출률, 미제출자, 최근 제출 현황을 관리합니다.'],members:['멤버 관리','소모임 참여자와 운영진 권한을 관리합니다.'],notices:['공지사항','소모임 안내와 과제 관련 공지를 관리합니다.'],talk:['대화방','건의사항, 아이디어, 느낀점을 자유롭게 공유합니다.']};
   $('page-title').textContent=titles[page][0]; $('page-subtitle').textContent=titles[page][1];
   applyMode();
 }
@@ -562,7 +591,7 @@ $('btn-connect').onclick=async()=>{
 }
 $('btn-demo').onclick=()=>{Object.assign(state,JSON.parse(JSON.stringify(sample)));demoMode=true;hideSetup();ensureMe();renderAll();setConn(true);$('conn-text').textContent='샘플 데이터';toast('샘플 데이터로 실행합니다','success')}
 
-function renderAll(){renderDashboard();renderAssignments();renderSubmit();renderMy();renderAdmin();renderMembers();renderNotices();updateLoginProfile();applyMode();rotateMotivationQuote()}
+function renderAll(){renderDashboard();renderAssignments();renderSubmit();renderMy();renderAdmin();renderMembers();renderNotices();renderTalk();updateLoginProfile();applyMode();rotateMotivationQuote()}
 function renderDashboard(){
   const c=calc();
   $('stat-participation').innerHTML=`${c.participation}<span>%</span>`; $('stat-total-rate').innerHTML=`${c.totalRate}<span>%</span>`; $('stat-week-rate').innerHTML=`${c.weekRate}<span>%</span>`; $('stat-missing').innerHTML=`${c.missing.length}<span>명</span>`;
@@ -615,7 +644,16 @@ function renderMembers(){
   $('member-list').innerHTML=members().map(m=>{const done=assignments().filter(a=>getSub(m.id,a.id)).length;const rate=assignments().length?Math.round(done/assignments().length*100):0;return `<div class="member-card"><div class="member-actions"><button class="icon-btn" title="멤버 정보 수정" onclick="startEditMember('${m.id}')">수정</button><button class="icon-btn" title="권한 전환" onclick="toggleRole('${m.id}')">${m.role==='admin'?'운영':'참여'}</button><button class="icon-btn" title="멤버 삭제" onclick="deleteMember('${m.id}')">✕</button></div><div class="profile-top"><div class="avatar">${esc(m.name.slice(0,1))}</div><div><div class="profile-name">${esc(m.name)}</div><div class="profile-mail">${esc(m.email||'')}</div></div></div><div style="margin-top:12px"><span class="badge ${m.role==='admin'?'badge-brand':'badge-blue'}">${m.role}</span> <span class="helper">${esc(m.department||'')}</span></div><div style="margin-top:12px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px"><span>진행률</span><span class="mono">${done}/${assignments().length} (${rate}%)</span></div><div class="progress"><div class="bar ${rateClass(rate)}" style="width:${rate}%"></div></div></div></div>`}).join('')||'<div class="empty">등록된 멤버가 없습니다.</div>';
 }
 function renderNotices(){
-  $('notice-list').innerHTML=notices().map(n=>`<div class="notice-card"><div style="display:flex;justify-content:space-between;gap:10px"><strong>${esc(n.title)}</strong><button class="btn btn-sm btn-danger admin-only" onclick="deleteNotice('${n.id}')">삭제</button></div><div class="notice-body">${esc(n.content)}</div><div class="helper">${fmtDate(n.createdAt)}</div></div>`).join('')||'<div class="empty">등록된 공지사항이 없습니다.</div>';
+  $('notice-list').innerHTML=notices().map(n=>`<div class="notice-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>${esc(n.title)}</strong><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn btn-sm admin-only" onclick="startEditNotice('${n.id}')">수정</button><button class="btn btn-sm btn-danger admin-only" onclick="deleteNotice('${n.id}')">삭제</button></div></div><div class="notice-body">${esc(n.content)}</div><div class="helper">${fmtDate(n.updatedAt||n.createdAt)}</div></div>`).join('')||'<div class="empty">등록된 공지사항이 없습니다.</div>';
+}
+function renderTalk(){
+  const items=chats();
+  $('talk-list').innerHTML=items.map(c=>{
+    const mine=currentUser && String(c.authorEmail||'').toLowerCase()===String(currentUser.email||'').toLowerCase();
+    const canDelete=isAdmin()||mine;
+    const author=c.anonymous?'익명':(c.authorName||'멤버');
+    return `<div class="talk-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="talk-category">${esc(c.category||'💬 이야기')}</span>${canDelete?`<button class="icon-btn" title="삭제" onclick="deleteTalk('${c.id}')">✕</button>`:''}</div><div class="talk-title">${esc(c.title)}</div><div class="talk-content">${esc(c.content)}</div><div class="talk-foot"><span>${esc(author)}</span><span class="mono">${fmtDate(c.createdAt)}</span></div></div>`;
+  }).join('')||'<div class="empty" style="grid-column:1/-1">아직 등록된 대화가 없습니다. 첫 글을 남겨보세요.</div>';
 }
 function selectAssignmentAndSubmit(id){showPage('submit');setTimeout(()=>{$('submit-assignment').value=id;renderAssignmentDetail()},0)}
 
@@ -706,8 +744,54 @@ function resetMemberForm(){
 }
 async function toggleRole(id){const m=state.members[id]; if(!m)return; m.role=m.role==='admin'?'member':'admin'; await fbSet('members/'+id,m); toast('권한이 변경되었습니다','success'); poll()}
 async function deleteMember(id){if(id===myId()){toast('현재 로그인한 계정은 삭제할 수 없습니다','error');return} if(!confirm('멤버와 제출 내역을 삭제할까요?'))return; await fbDelete('members/'+id); for(const s of submissions().filter(s=>s.memberId===id)) await fbDelete('submissions/'+s.id); toast('멤버가 삭제되었습니다','info'); poll()}
-$('btn-add-notice').onclick=async()=>{const title=$('n-title').value.trim(); if(!title){toast('공지 제목을 입력해주세요','error');return} const id='n_'+Date.now(); await fbSet('notices/'+id,{id,title,content:$('n-content').value.trim(),createdAt:Date.now()}); $('n-title').value='';$('n-content').value='';toast('공지사항이 저장되었습니다','success');poll()}
+$('btn-add-notice').onclick=async()=>{
+  const title=$('n-title').value.trim();
+  if(!title){toast('공지 제목을 입력해주세요','error');return}
+  const now=Date.now();
+  const id=editingNoticeId || 'n_'+now;
+  const prev=editingNoticeId ? (state.notices[editingNoticeId]||{}) : {};
+  await fbSet('notices/'+id,{...prev,id,title,content:$('n-content').value.trim(),createdAt:prev.createdAt||now,updatedAt:now});
+  const wasEditing=!!editingNoticeId;
+  resetNoticeForm();
+  toast(wasEditing?'공지사항이 수정되었습니다':'공지사항이 저장되었습니다','success');poll()
+}
+$('btn-cancel-notice-edit').onclick=()=>{resetNoticeForm();toast('공지 수정을 취소했습니다','info')}
+function startEditNotice(id){
+  const n=state.notices[id];
+  if(!n){toast('공지사항을 찾을 수 없습니다','error');return}
+  editingNoticeId=id;
+  $('n-title').value=n.title||'';
+  $('n-content').value=n.content||'';
+  $('notice-form-title').textContent='공지 수정';
+  $('btn-add-notice').textContent='수정 저장';
+  $('btn-cancel-notice-edit').style.display='inline-flex';
+  showPage('notices');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function resetNoticeForm(){
+  editingNoticeId=null;
+  $('n-title').value=''; $('n-content').value='';
+  $('notice-form-title').textContent='공지 등록';
+  $('btn-add-notice').textContent='공지 저장';
+  $('btn-cancel-notice-edit').style.display='none';
+}
 async function deleteNotice(id){await fbDelete('notices/'+id);toast('공지가 삭제되었습니다','info');poll()}
+
+$('btn-toggle-talk-form').onclick=()=>{$('talk-write-panel').classList.toggle('show')}
+$('btn-cancel-talk').onclick=()=>{resetTalkForm();$('talk-write-panel').classList.remove('show')}
+function resetTalkForm(){ $('talk-title').value=''; $('talk-content').value=''; $('talk-category').value='💡 아이디어'; $('talk-anonymous').checked=false; }
+$('btn-add-talk').onclick=async()=>{
+  const title=$('talk-title').value.trim();
+  const content=$('talk-content').value.trim();
+  if(!title){toast('대화방 제목을 입력해주세요','error');return}
+  if(!content){toast('대화방 내용을 입력해주세요','error');return}
+  const id='c_'+Date.now();
+  const anonymous=$('talk-anonymous').checked;
+  await fbSet('chats/'+id,{id,category:$('talk-category').value,title,content,anonymous,authorName:anonymous?'익명':(currentUser?.displayName||'멤버'),authorEmail:anonymous?'':(currentUser?.email||''),memberId:anonymous?'':myId(),createdAt:Date.now()});
+  resetTalkForm(); $('talk-write-panel').classList.remove('show');
+  toast('대화방 글이 등록되었습니다','success'); poll();
+}
+async function deleteTalk(id){if(!confirm('이 글을 삭제할까요?'))return; await fbDelete('chats/'+id); toast('대화방 글이 삭제되었습니다','info'); poll()}
 
 const MOTIVATION_QUOTES = [
   "작은 실천이 쌓이면 일하는 방식이 바뀝니다.",
