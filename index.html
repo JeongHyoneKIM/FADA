@@ -117,8 +117,8 @@ body.admin-mode .admin-only{display:revert}
 <div id="auth-overlay" class="auth-overlay">
   <div class="auth-card">
     <div class="setup-badge">🔐 Google Login</div>
-    <h2>AI 소모임 플랫폼 로그인</h2>
-    <p>Google 계정으로 로그인하면 대시보드에 접속할 수 있습니다.<br><b>vdk7458@gmail.com</b> 계정만 운영진 모드가 열리고, 나머지 계정은 참여자 모드로 접속합니다.</p>
+    <h2>FADA_주차별 과제 제출 플랫폼 로그인</h2>
+    <p>Google 계정으로 로그인하면 대시보드에 접속할 수 있습니다.</p>
     <button class="btn btn-primary" id="btn-google-login" style="width:100%;justify-content:center">Google 계정으로 로그인</button>
     <div id="auth-config-warning" class="auth-config-warning">Firebase Google 로그인 설정이 적용되었습니다.</div>
   </div>
@@ -134,10 +134,10 @@ body.admin-mode .admin-only{display:revert}
     </div>
     <div class="profile-card">
       <div class="profile-top">
-        <div class="avatar">김</div>
+        <div class="avatar">U</div>
         <div>
-          <div class="profile-name">김정현</div>
-          <div class="profile-mail">admin@study.local</div>
+          <div class="profile-name">로그인 사용자</div>
+          <div class="profile-mail">로그인 대기</div>
         </div>
       </div>
       <span class="role-pill" id="sidebar-role-pill">로그인 대기</span><div style="margin-top:10px"><button class="btn btn-sm" id="btn-logout" style="width:100%;justify-content:center">로그아웃</button></div>
@@ -476,9 +476,39 @@ async function poll(){
   }catch(e){setConn(false)}
 }
 function ensureMe(){
-  if(!state.members[CURRENT_USER_ID]){
-    state.members[CURRENT_USER_ID]={id:CURRENT_USER_ID,name:'김정현',email:'vdk7458@gmail.com',department:'FA기술담당',role:'admin',joinedAt:Date.now()};
-    if(DB_URL&&!demoMode) fbSet('members/'+CURRENT_USER_ID,state.members[CURRENT_USER_ID]).catch(()=>{});
+  if(!currentUser) return;
+
+  const email = String(currentUser.email || '').trim();
+  const emailLower = email.toLowerCase();
+  const admin = emailLower === ADMIN_EMAIL.toLowerCase();
+
+  // 이미 멤버 관리에 같은 이메일로 등록된 사람이 있으면 그 멤버를 현재 로그인 사용자로 연결합니다.
+  const existing = Object.values(state.members || {}).find(m =>
+    String(m.email || '').trim().toLowerCase() === emailLower
+  );
+
+  const id = existing?.id || currentUser.uid;
+  currentMemberId = id;
+
+  const nextMember = {
+    ...(existing || {}),
+    id,
+    name: currentUser.displayName || existing?.name || (email ? email.split('@')[0] : '사용자'),
+    email,
+    department: existing?.department || '',
+    role: admin ? 'admin' : 'member',
+    photoURL: currentUser.photoURL || existing?.photoURL || '',
+    joinedAt: existing?.joinedAt || Date.now(),
+    lastLoginAt: Date.now()
+  };
+
+  state.members[id] = nextMember;
+
+  // 자동 멤버 추가/업데이트: vdk7458@gmail.com은 admin, 그 외 로그인 계정은 member로 저장합니다.
+  if(DB_URL && !demoMode){
+    fbSet('members/' + id, nextMember).catch(err => {
+      console.warn('자동 멤버 저장 실패:', err);
+    });
   }
 }
 function setConn(v){$('conn-dot').className='dot'+(v?' online':''); $('conn-text').textContent=v?'Firebase 연결됨':'연결 끊김'}
@@ -532,7 +562,7 @@ $('btn-connect').onclick=async()=>{
 }
 $('btn-demo').onclick=()=>{Object.assign(state,JSON.parse(JSON.stringify(sample)));demoMode=true;hideSetup();ensureMe();renderAll();setConn(true);$('conn-text').textContent='샘플 데이터';toast('샘플 데이터로 실행합니다','success')}
 
-function renderAll(){renderDashboard();renderAssignments();renderSubmit();renderMy();renderAdmin();renderMembers();renderNotices();applyMode()}
+function renderAll(){renderDashboard();renderAssignments();renderSubmit();renderMy();renderAdmin();renderMembers();renderNotices();updateLoginProfile();applyMode()}
 function renderDashboard(){
   const c=calc();
   $('stat-participation').innerHTML=`${c.participation}<span>%</span>`; $('stat-total-rate').innerHTML=`${c.totalRate}<span>%</span>`; $('stat-week-rate').innerHTML=`${c.weekRate}<span>%</span>`; $('stat-missing').innerHTML=`${c.missing.length}<span>명</span>`;
@@ -686,15 +716,29 @@ function updateLoginProfile(){
   const m = state.members[myId()] || {};
   const name = currentUser?.displayName || m.name || '사용자';
   const email = currentUser?.email || m.email || '';
-  document.querySelector('.profile-name').textContent = name;
-  document.querySelector('.profile-mail').textContent = email;
-  document.querySelector('.avatar').textContent = (name||email||'U').slice(0,1);
+  const profileName = document.querySelector('.profile-name');
+  const profileMail = document.querySelector('.profile-mail');
+  const avatar = document.querySelector('.avatar');
+  if(profileName) profileName.textContent = name;
+  if(profileMail) profileMail.textContent = email;
+  if(avatar){
+    if(currentUser?.photoURL){
+      avatar.style.backgroundImage = `url(${currentUser.photoURL})`;
+      avatar.style.backgroundSize = 'cover';
+      avatar.style.backgroundPosition = 'center';
+      avatar.textContent = '';
+    } else {
+      avatar.style.backgroundImage = '';
+      avatar.textContent = (name || email || 'U').slice(0,1);
+    }
+  }
   $('sidebar-role-pill').textContent = isAdmin() ? '운영진 · 참여자 겸용' : '참여자';
 }
 function showAuthOverlay(){ $('auth-overlay').style.display='flex'; }
 function hideAuthOverlay(){ $('auth-overlay').style.display='none'; }
 async function startAppAfterLogin(user){
   currentUser = user;
+  currentMemberId = user.uid;
   hideAuthOverlay();
   currentMode = isAdmin() ? 'admin' : 'member';
   const fixedUrl = normalizedFixedUrl();
@@ -733,7 +777,7 @@ $('btn-google-login').onclick=async()=>{
   try{ await auth.signInWithPopup(provider); }
   catch(e){ toast(e.message || 'Google 로그인 실패', 'error'); }
 };
-$('btn-logout').onclick=()=>{ if(auth) auth.signOut(); };
+$('btn-logout').onclick=()=>{ if(auth) auth.signOut(); currentUser=null; currentMemberId=null; updateLoginProfile(); };
 
 initGoogleAuth();
 </script>
