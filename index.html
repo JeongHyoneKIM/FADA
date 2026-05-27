@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FADA_소모임 관리 플랫폼</title>
+<title>FADA_주차별 과제 제출 플랫폼 로그인</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -131,7 +131,7 @@ body.admin-mode .admin-only{display:revert}
   <aside class="sidebar">
     <div class="logo">
       <div class="logo-mark">AI</div>
-      <div class="logo-title">FADA<span>소모임 관리 플랫폼</span></div>
+      <div class="logo-title">FADA<span>주차별 과제 제출 플랫폼</span></div>
     </div>
     <div class="profile-card">
       <div class="profile-top">
@@ -241,7 +241,7 @@ body.admin-mode .admin-only{display:revert}
           <div id="assignment-detail-box" style="margin-top:16px"></div>
         </div>
         <div class="card">
-          <div class="card-head"><div><div class="card-title">과제 제출</div><div class="card-desc">텍스트 메모와 개인 노트북 파일, 캡쳐 이미지를 중심으로 제출합니다. GitHub 링크는 선택입니다.</div></div></div>
+          <div class="card-head"><div><div class="card-title">과제 제출</div></div></div>
           <div class="form-grid">
             <div class="field"><label>제출자</label><select id="submit-member"></select></div>
             <div class="field"><label>제출 상태</label><select id="submit-status"><option value="submitted">제출 완료</option><option value="draft">임시 저장</option><option value="late">지각 제출</option></select></div>
@@ -253,17 +253,15 @@ body.admin-mode .admin-only{display:revert}
             <div class="upload-zone">🖼 캡쳐 이미지 업로드 영역<br><span class="helper">PNG, JPG 등</span><input id="submit-images" type="file" multiple accept="image/*"></div>
           </div>
           <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn btn-primary" id="btn-save-submission">제출하기</button><button class="btn" id="btn-clear-submit">입력 초기화</button></div>
-          <p class="helper" style="margin-top:12px">선택한 파일은 Firebase Storage에 업로드되고, 운영진 화면에서 다른 노트북으로도 다운로드할 수 있는 URL이 저장됩니다.</p>
-          <div class="storage-note" style="margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--blue-bg);font-size:12px;line-height:1.6;color:var(--muted)">
-            운영진 다운로드 구조: 참여자 파일 → Firebase Storage 저장 → 다운로드 URL을 Database에 저장 → 운영진 화면에서 다운로드 버튼으로 확인
-          </div>
+          
+
         </div>
       </div>
     </section>
 
     <section class="page" id="page-my">
       <div class="card">
-        <div class="card-head"><div><div class="card-title">나의 제출 현황</div><div class="card-desc">운영진 계정도 참여자로 과제 제출 내역을 확인할 수 있습니다.</div></div></div>
+        <div class="card-head"><div><div class="card-title">나의 제출 현황</div></div></div>
         <div id="my-submission-list"></div>
       </div>
     </section>
@@ -362,6 +360,7 @@ let currentUser = null;
 let currentMemberId = null;
 let editingMemberId = null;
 let editingNoticeId = null;
+let editingTalkId = null;
 const state = { members:{}, assignments:{}, submissions:{}, notices:{}, chats:{} };
 
 const sample = {
@@ -574,7 +573,7 @@ function showPage(page){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   $('page-'+page).classList.add('active');
-  const titles={dashboard:[getDashboardGreeting(),''],assignments:['주차별 과제 목록','참여자는 과제 등록 없이 주차별 과제를 확인하고 제출만 진행합니다.'],submit:['과제 상세 및 제출','텍스트 메모, 개인 파일, 캡쳐 이미지를 제출합니다. GitHub 링크는 선택입니다.'],my:['나의 제출 현황','내가 제출한 과제와 진행률을 확인합니다.'],admin:['운영진 관리 대시보드','전체 참여율, 제출률, 미제출자, 최근 제출 현황을 관리합니다.'],members:['멤버 관리','소모임 참여자와 운영진 권한을 관리합니다.'],notices:['공지사항','소모임 안내와 과제 관련 공지를 관리합니다.'],talk:['대화방','건의사항, 아이디어, 느낀점을 자유롭게 공유합니다.']};
+  const titles={dashboard:[getDashboardGreeting(),''],assignments:['주차별 과제 목록',''],submit:['과제 상세 및 제출',''],my:['나의 제출 현황',''],admin:['운영진 관리 대시보드','전체 참여율, 제출률, 미제출자, 최근 제출 현황을 관리합니다.'],members:['멤버 관리','소모임 참여자와 운영진 권한을 관리합니다.'],notices:['공지사항','소모임 안내와 과제 관련 공지를 관리합니다.'],talk:['대화방','건의사항, 아이디어, 느낀점을 자유롭게 공유합니다.']};
   $('page-title').textContent=titles[page][0]; $('page-subtitle').textContent=titles[page][1];
   applyMode();
 }
@@ -626,11 +625,14 @@ function renderAssignments(){
   }).join('')||'<div class="empty" style="grid-column:1/-1">등록된 과제가 없습니다.</div>';
 }
 function renderSubmit(){
-  const as=assignments(), ms=members();
-  const prevA=$('submit-assignment').value, prevM=$('submit-member').value;
+  const as=assignments();
+  const prevA=$('submit-assignment').value;
+  const me = state.members[myId()];
   $('submit-assignment').innerHTML=as.map(a=>`<option value="${a.id}">${esc(a.week||'')} ${esc(a.title)}</option>`).join('')||'<option value="">과제 없음</option>';
-  $('submit-member').innerHTML=ms.map(m=>`<option value="${m.id}">${esc(m.name)} ${m.role==='admin'?'(운영진)':''}</option>`).join('')||'<option value="">멤버 없음</option>';
-  if(prevA)$('submit-assignment').value=prevA; if(prevM)$('submit-member').value=prevM; else $('submit-member').value=myId();
+  $('submit-member').innerHTML=me?`<option value="${me.id}">${esc(me.name)}${me.role==='admin'?' (운영진)':''}</option>`:'<option value="">로그인 사용자</option>';
+  $('submit-member').value=myId();
+  $('submit-member').disabled=true;
+  if(prevA)$('submit-assignment').value=prevA;
   renderAssignmentDetail();
 }
 function renderAssignmentDetail(){
@@ -658,10 +660,11 @@ function renderNotices(){
 function renderTalk(){
   const items=chats();
   $('talk-list').innerHTML=items.map(c=>{
-    const mine=currentUser && String(c.authorEmail||'').toLowerCase()===String(currentUser.email||'').toLowerCase();
-    const canDelete=isAdmin()||mine;
+    const ownerEmail=String(c.ownerEmail||c.authorEmail||'').toLowerCase();
+    const mine=currentUser && ownerEmail===String(currentUser.email||'').toLowerCase();
+    const canManage=isAdmin()||mine;
     const author=c.anonymous?'익명':(c.authorName||'멤버');
-    return `<div class="talk-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="talk-category">${esc(c.category||'💬 이야기')}</span>${canDelete?`<button class="icon-btn" title="삭제" onclick="deleteTalk('${c.id}')">✕</button>`:''}</div><div class="talk-title">${esc(c.title)}</div><div class="talk-content">${esc(c.content)}</div><div class="talk-foot"><span>${esc(author)}</span><span class="mono">${fmtDate(c.createdAt)}</span></div></div>`;
+    return `<div class="talk-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="talk-category">${esc(c.category||'💬 이야기')}</span>${canManage?`<div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="startEditTalk('${c.id}')">수정</button><button class="icon-btn" title="삭제" onclick="deleteTalk('${c.id}')">✕</button></div>`:''}</div><div class="talk-title">${esc(c.title)}</div><div class="talk-content">${esc(c.content)}</div><div class="talk-foot"><span>${esc(author)}</span><span class="mono">${fmtDate(c.updatedAt||c.createdAt)}</span></div></div>`;
   }).join('')||'<div class="empty" style="grid-column:1/-1">아직 등록된 대화가 없습니다. 첫 글을 남겨보세요.</div>';
 }
 function selectAssignmentAndSubmit(id){showPage('submit');setTimeout(()=>{$('submit-assignment').value=id;renderAssignmentDetail()},0)}
@@ -694,7 +697,7 @@ $('btn-add-assignment').onclick=async()=>{
 }
 async function deleteAssignment(id){if(!confirm('과제와 관련 제출 내역을 삭제할까요?'))return; await fbDelete('assignments/'+id); for(const s of submissions().filter(s=>s.assignmentId===id)) await fbDelete('submissions/'+s.id); toast('과제가 삭제되었습니다','info'); poll()}
 $('btn-save-submission').onclick=async()=>{
-  const aId=$('submit-assignment').value,mId=$('submit-member').value; if(!aId||!mId){toast('과제와 제출자를 선택해주세요','error');return}
+  const aId=$('submit-assignment').value,mId=myId(); if(!aId||!mId){toast('과제와 로그인 사용자를 확인해주세요','error');return}
   const old=getSubmissionAny(mId,aId); const id=old?old.id:'s_'+Date.now();
   try{
     $('btn-save-submission').disabled=true; $('btn-save-submission').textContent='업로드 중...';
@@ -786,21 +789,53 @@ function resetNoticeForm(){
 }
 async function deleteNotice(id){await fbDelete('notices/'+id);toast('공지가 삭제되었습니다','info');poll()}
 
-$('btn-toggle-talk-form').onclick=()=>{$('talk-write-panel').classList.toggle('show')}
+$('btn-toggle-talk-form').onclick=()=>{resetTalkForm();$('talk-write-panel').classList.toggle('show')}
 $('btn-cancel-talk').onclick=()=>{resetTalkForm();$('talk-write-panel').classList.remove('show')}
-function resetTalkForm(){ $('talk-title').value=''; $('talk-content').value=''; $('talk-category').value='💡 아이디어'; $('talk-anonymous').checked=false; }
+function resetTalkForm(){
+  editingTalkId=null;
+  $('talk-title').value=''; $('talk-content').value=''; $('talk-category').value='💡 아이디어'; $('talk-anonymous').checked=false;
+  $('btn-add-talk').textContent='등록하기';
+}
+function startEditTalk(id){
+  const c=state.chats[id];
+  if(!c){toast('대화방 글을 찾을 수 없습니다','error');return}
+  const ownerEmail=String(c.ownerEmail||c.authorEmail||'').toLowerCase();
+  const mine=currentUser && ownerEmail===String(currentUser.email||'').toLowerCase();
+  if(!isAdmin()&&!mine){toast('본인이 작성한 글만 수정할 수 있습니다','error');return}
+  editingTalkId=id;
+  $('talk-category').value=c.category||'💡 아이디어';
+  $('talk-title').value=c.title||'';
+  $('talk-content').value=c.content||'';
+  $('talk-anonymous').checked=!!c.anonymous;
+  $('btn-add-talk').textContent='수정 저장';
+  $('talk-write-panel').classList.add('show');
+  showPage('talk');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 $('btn-add-talk').onclick=async()=>{
   const title=$('talk-title').value.trim();
   const content=$('talk-content').value.trim();
   if(!title){toast('대화방 제목을 입력해주세요','error');return}
   if(!content){toast('대화방 내용을 입력해주세요','error');return}
-  const id='c_'+Date.now();
+  const now=Date.now();
+  const id=editingTalkId || 'c_'+now;
+  const prev=editingTalkId ? (state.chats[editingTalkId]||{}) : {};
+  const ownerEmail=prev.ownerEmail || prev.authorEmail || (currentUser?.email||'');
+  const ownerMemberId=prev.ownerMemberId || prev.memberId || myId();
   const anonymous=$('talk-anonymous').checked;
-  await fbSet('chats/'+id,{id,category:$('talk-category').value,title,content,anonymous,authorName:anonymous?'익명':(currentUser?.displayName||'멤버'),authorEmail:anonymous?'':(currentUser?.email||''),memberId:anonymous?'':myId(),createdAt:Date.now()});
+  await fbSet('chats/'+id,{...prev,id,category:$('talk-category').value,title,content,anonymous,authorName:anonymous?'익명':(currentUser?.displayName||prev.authorName||'멤버'),authorEmail:anonymous?'':(currentUser?.email||prev.authorEmail||''),ownerEmail,memberId:anonymous?'':ownerMemberId,ownerMemberId,createdAt:prev.createdAt||now,updatedAt:now});
+  const wasEditing=!!editingTalkId;
   resetTalkForm(); $('talk-write-panel').classList.remove('show');
-  toast('대화방 글이 등록되었습니다','success'); poll();
+  toast(wasEditing?'대화방 글이 수정되었습니다':'대화방 글이 등록되었습니다','success'); poll();
 }
-async function deleteTalk(id){if(!confirm('이 글을 삭제할까요?'))return; await fbDelete('chats/'+id); toast('대화방 글이 삭제되었습니다','info'); poll()}
+async function deleteTalk(id){
+  const c=state.chats[id];
+  const ownerEmail=String(c?.ownerEmail||c?.authorEmail||'').toLowerCase();
+  const mine=currentUser && ownerEmail===String(currentUser.email||'').toLowerCase();
+  if(!isAdmin()&&!mine){toast('본인이 작성한 글만 삭제할 수 있습니다','error');return}
+  if(!confirm('이 글을 삭제할까요?'))return;
+  await fbDelete('chats/'+id); toast('대화방 글이 삭제되었습니다','info'); poll()
+}
 
 const MOTIVATION_QUOTES = [
   "작은 실천이 쌓이면 일하는 방식이 바뀝니다.",
