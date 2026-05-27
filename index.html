@@ -562,10 +562,8 @@ $('btn-add-assignment').onclick=async()=>{
     }
     const practiceUploaded=await uploadFileList($('a-practice-upload-files').files,'assignment-practice',meta);
     if(practiceUploaded.length){
-      const uploadedLines=practiceUploaded.map(f=>`${f.name}|${f.url}`).join('
-');
-      practiceText = [practiceText, uploadedLines].filter(Boolean).join('
-');
+      const uploadedLines=practiceUploaded.map(f=>`${f.name}|${f.url}`).join('\n');
+      practiceText = [practiceText, uploadedLines].filter(Boolean).join('\n');
     }
     await fbSet('assignments/'+id,{id,title,week,tool:$('a-tool').value.trim(),due:$('a-due').value,desc:$('a-desc').value.trim(),guideUrl,guideName,practiceFiles:practiceText,createdAt:Date.now()});
     ['a-title','a-week','a-tool','a-due','a-desc','a-guide-url','a-guide-name','a-practice-files','a-guide-file','a-practice-upload-files'].forEach(id=>$(id).value='');
