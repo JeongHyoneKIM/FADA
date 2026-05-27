@@ -66,7 +66,7 @@ h1{font-size:28px;letter-spacing:-.04em} .subtitle{font-size:14px;color:var(--mu
 .member-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}.member-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;position:relative}
 .member-actions{position:absolute;top:12px;right:12px;display:flex;gap:6px}.icon-btn{border:0;background:#f3f4f6;border-radius:10px;padding:6px;cursor:pointer;color:var(--muted)}
 .notice-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:10px}.notice-body{white-space:pre-wrap;color:var(--muted);line-height:1.65;font-size:13px;margin-top:8px}
-.talk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}.talk-card{position:relative;overflow:hidden;background:linear-gradient(145deg,#fff 0%,#f8fbff 54%,#f7f2ff 100%);border:1px solid rgba(229,231,235,.96);border-radius:24px;padding:20px;min-height:210px;box-shadow:0 12px 28px rgba(15,23,42,.055)}.talk-category{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;background:var(--brand-bg);color:var(--brand);font-size:11px;font-weight:900}.talk-title{font-size:18px;font-weight:900;letter-spacing:-.03em;margin-top:14px;line-height:1.35}.talk-content{white-space:pre-wrap;color:var(--muted);line-height:1.68;font-size:13px;margin-top:10px}.talk-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px dashed var(--line2);margin-top:16px;padding-top:12px;font-size:12px;color:var(--soft)}.talk-write-panel{display:none}.talk-write-panel.show{display:block}.checkbox-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;font-weight:700}.checkbox-row input{width:auto}
+.talk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}.talk-card{position:relative;background:#fff;border:1px solid rgba(229,231,235,.96);border-radius:24px;padding:20px;min-height:210px;box-shadow:0 12px 28px rgba(15,23,42,.055)}.talk-category{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;background:var(--brand-bg);color:var(--brand);font-size:11px;font-weight:900}.talk-title{font-size:18px;font-weight:900;letter-spacing:-.03em;margin-top:14px;line-height:1.35}.talk-content{white-space:pre-wrap;color:var(--muted);line-height:1.68;font-size:13px;margin-top:10px}.talk-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;border-top:1px dashed var(--line2);margin-top:16px;padding-top:12px;font-size:12px;color:var(--soft)}.talk-write-panel{display:none}.talk-write-panel.show{display:block}.checkbox-row{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;font-weight:700}.checkbox-row input{width:auto}
 .detail-layout{display:grid;grid-template-columns:.95fr 1.05fr;gap:18px}.check-list{display:flex;flex-direction:column;gap:10px}.check-item{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px}.check-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--brand-bg);color:var(--brand);font-weight:900;flex:0 0 auto}
 .empty{padding:34px;text-align:center;color:var(--soft);font-size:13px}.toast-wrap{position:fixed;right:22px;bottom:22px;z-index:1200;display:flex;flex-direction:column;gap:9px}.toast{background:var(--text);color:#fff;border-radius:14px;padding:11px 14px;font-size:13px;box-shadow:0 16px 34px rgba(15,23,42,.2);animation:pop .18s ease}.toast.success{background:#166534}.toast.error{background:#991b1b}.toast.info{background:#3730a3}@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .helper{font-size:12px;color:var(--muted);line-height:1.65}.muted{color:var(--muted)}.mono{font-family:'DM Mono',monospace}.hidden{display:none!important}
@@ -394,7 +394,7 @@ function members(){return Object.values(state.members||{}).sort((a,b)=>(a.joined
 function assignments(){return Object.values(state.assignments||{}).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0))}
 function submissions(){return Object.values(state.submissions||{}).sort((a,b)=>(b.submittedAt||0)-(a.submittedAt||0))}
 function notices(){return Object.values(state.notices||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))}
-function chats(){return Object.values(state.chats||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))}
+function chats(){return Object.values(state.chats||{}).filter(c=>c&&!c.deleted).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))}
 function memberName(id){return state.members[id]?.name||'—'} function assignmentTitle(id){return state.assignments[id]?.title||'—'}
 function esc(s=''){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function parsePracticeFiles(raw){
@@ -447,6 +447,7 @@ function calc(){
 async function fbGet(path=''){const res=await fetch(await withAuthUrl(DB_URL+path+'.json')); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
 async function fbSet(path,data){ if(demoMode){setLocal(path,data); renderAll(); return data} const res=await fetch(await withAuthUrl(DB_URL+path+'.json'),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
 async function fbDelete(path){ if(demoMode){deleteLocal(path); renderAll(); return} const res=await fetch(await withAuthUrl(DB_URL+path+'.json'),{method:'DELETE'}); if(!res.ok)throw new Error('HTTP '+res.status)}
+async function fbPatch(path,data){ if(demoMode){Object.entries(data||{}).forEach(([k,v])=>{ if(v===null) deleteLocal(k); else setLocal(k,v); }); renderAll(); return data} const res=await fetch(await withAuthUrl(DB_URL+path+'.json'),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
 
 function safeFileName(name){
   return String(name || 'file').replace(/[\/:*?"<>|#%{}\^~[\]`]/g,'_');
@@ -668,11 +669,13 @@ function canManageTalk(c){
   return (ownerEmail && ownerEmail === loginEmail) || (ownerUid && ownerUid === loginUid) || (ownerMemberId && ownerMemberId === myId());
 }
 function renderTalk(){
-  const items=chats();
-  $('talk-list').innerHTML=items.map(c=>{
+  const items=chats().filter(c=>c && !c.deleted);
+  const listEl = $('talk-list');
+  listEl.innerHTML=items.map(c=>{
     const canManage=canManageTalk(c);
     const author=c.anonymous?'익명':(c.authorName||'멤버');
-    return `<div class="talk-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="talk-category">${esc(c.category||'💬 이야기')}</span>${canManage?`<div style="display:flex;gap:6px"><button type="button" class="btn btn-sm" data-edit-talk-id="${esc(c.id)}" onclick="window.startEditTalkSafe('${esc(c.id)}')">수정</button><button type="button" class="icon-btn" title="삭제" data-delete-talk-id="${esc(c.id)}" onclick="window.deleteTalkSafe('${esc(c.id)}')">✕</button></div>`:''}</div><div class="talk-title">${esc(c.title)}</div><div class="talk-content">${esc(c.content)}</div><div class="talk-foot"><span>${esc(author)}</span><span class="mono">${fmtDate(c.updatedAt||c.createdAt)}</span></div></div>`;
+    const idAttr=esc(c.id||'');
+    return `<div class="talk-card" data-talk-card-id="${idAttr}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="talk-category">${esc(c.category||'💬 이야기')}</span>${canManage?`<div style="display:flex;gap:6px"><button type="button" class="btn btn-sm talk-edit-btn" data-edit-talk-id="${idAttr}">수정</button><button type="button" class="icon-btn talk-delete-btn" title="삭제" data-delete-talk-id="${idAttr}">✕</button></div>`:''}</div><div class="talk-title">${esc(c.title)}</div><div class="talk-content">${esc(c.content)}</div><div class="talk-foot"><span>${esc(author)}</span><span class="mono">${fmtDate(c.updatedAt||c.createdAt)}</span></div></div>`;
   }).join('')||'<div class="empty" style="grid-column:1/-1">아직 등록된 대화가 없습니다. 첫 글을 남겨보세요.</div>';
 }
 function selectAssignmentAndSubmit(id){showPage('submit');setTimeout(()=>{$('submit-assignment').value=id;renderAssignmentDetail()},0)}
@@ -838,31 +841,46 @@ $('btn-add-talk').onclick=async()=>{
   toast(wasEditing?'대화방 글이 수정되었습니다':'대화방 글이 등록되었습니다','success'); poll();
 }
 async function deleteTalk(id){
-  const key = String(id || '');
+  const key = String(id || '').trim();
   const c = state.chats && state.chats[key];
   if(!key || !c){toast('삭제할 글을 찾을 수 없습니다','error'); return;}
   if(!canManageTalk(c)){toast('본인이 작성한 글만 삭제할 수 있습니다','error');return}
   if(!confirm('이 글을 삭제할까요?'))return;
   try{
+    // 1차: 정확한 경로 DELETE
     await fbDelete('chats/'+key);
-    if(state.chats) delete state.chats[key];
-    renderTalk();
-    toast('대화방 글이 삭제되었습니다','info');
-    poll();
-  }catch(e){
-    toast('삭제 실패: '+(e.message||e),'error');
-    console.error('deleteTalk failed', e);
+  }catch(e1){
+    try{
+      // 2차: Realtime Database PATCH null 방식으로 삭제
+      const patch = {};
+      patch['chats/'+key] = null;
+      await fbPatch('', patch);
+    }catch(e2){
+      console.error('deleteTalk failed', e1, e2);
+      toast('삭제 실패: '+(e2.message||e1.message||e2||e1),'error');
+      return;
+    }
   }
+  if(state.chats) delete state.chats[key];
+  renderTalk();
+  toast('대화방 글이 삭제되었습니다','info');
+  poll();
+}
+
+function bindTalkEvents(){
+  const listEl = $('talk-list');
+  if(!listEl || listEl.dataset.bound === '1') return;
+  listEl.dataset.bound = '1';
+  listEl.addEventListener('click', (e)=>{
+    const delBtn = e.target.closest('[data-delete-talk-id]');
+    if(delBtn){ e.preventDefault(); e.stopPropagation(); deleteTalk(delBtn.getAttribute('data-delete-talk-id')); return; }
+    const editBtn = e.target.closest('[data-edit-talk-id]');
+    if(editBtn){ e.preventDefault(); e.stopPropagation(); startEditTalk(editBtn.getAttribute('data-edit-talk-id')); }
+  });
 }
 window.deleteTalkSafe = function(id){ deleteTalk(id); };
 window.startEditTalkSafe = function(id){ startEditTalk(id); };
-
-document.addEventListener('click', (e)=>{
-  const delBtn = e.target.closest('[data-delete-talk-id]');
-  if(delBtn){ e.preventDefault(); e.stopPropagation(); deleteTalk(delBtn.getAttribute('data-delete-talk-id')); return; }
-  const editBtn = e.target.closest('[data-edit-talk-id]');
-  if(editBtn){ e.preventDefault(); e.stopPropagation(); startEditTalk(editBtn.getAttribute('data-edit-talk-id')); }
-});
+bindTalkEvents();
 
 const MOTIVATION_QUOTES = [
   "작은 실천이 쌓이면 일하는 방식이 바뀝니다.",
