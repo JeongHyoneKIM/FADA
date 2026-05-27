@@ -131,7 +131,7 @@ body.admin-mode .admin-only{display:revert}
   <aside class="sidebar">
     <div class="logo">
       <div class="logo-mark">AI</div>
-      <div class="logo-title">FADA<span>주차별 과제 제출 플랫폼</span></div>
+      <div class="logo-title">FADA<span>소모임 관리 플랫폼</span></div>
     </div>
     <div class="profile-card">
       <div class="profile-top">
@@ -144,7 +144,7 @@ body.admin-mode .admin-only{display:revert}
       <span class="role-pill" id="sidebar-role-pill">계정 확인 중</span><div style="margin-top:10px"><button class="btn btn-sm" id="btn-logout" style="width:100%;justify-content:center">로그아웃</button></div>
     </div>
     <nav class="nav">
-      <button class="nav-item active" data-page="dashboard">🏠 <span class="nav-label">Main 대시보드</span></button>
+      <button class="nav-item active" data-page="dashboard">🏠 <span class="nav-label">Main</span></button>
       <button class="nav-item" data-page="assignments">📚 <span class="nav-label">주차별 과제</span></button>
       <button class="nav-item" data-page="submit">📝 <span class="nav-label">과제 제출</span></button>
       <button class="nav-item" data-page="my">✅ <span class="nav-label">나의 제출 현황</span></button>
@@ -163,8 +163,8 @@ body.admin-mode .admin-only{display:revert}
     <div class="topbar">
       <div>
         <div class="eyebrow" id="motivation-quote">작은 실천이 쌓이면 일하는 방식이 바뀝니다.</div>
-        <h1 id="page-title">Main 대시보드</h1>
-        <p class="subtitle" id="page-subtitle">이번 주 과제와 전체 소모임 제출 현황을 한눈에 확인합니다.</p>
+        <h1 id="page-title">안녕하세요, 사용자님! 🎈</h1>
+        <p class="subtitle" id="page-subtitle"></p>
       </div>
       <div class="mode-switch">
         <button class="mode-btn active" id="mode-member">참여자 모드</button>
@@ -183,14 +183,14 @@ body.admin-mode .admin-only{display:revert}
       <div class="grid-2">
         <div class="card">
           <div class="card-head">
-            <div><div class="card-title">이번 주 과제 카드</div><div class="card-desc">마감일, 제출 상태, 파일·이미지 업로드 항목을 확인합니다.</div></div>
+            <div><div class="card-title">이번 주 과제 카드</div></div>
             <span class="badge badge-brand" id="current-week-badge">이번 주</span>
           </div>
           <div id="current-assignment"></div>
         </div>
         <div class="card">
           <div class="card-head">
-            <div><div class="card-title">나의 진행률</div><div class="card-desc">운영진도 참여자로 포함되어 과제를 제출할 수 있습니다.</div></div>
+            <div><div class="card-title">나의 진행률</div></div>
           </div>
           <div id="my-progress"></div>
         </div>
@@ -198,11 +198,11 @@ body.admin-mode .admin-only{display:revert}
 
       <div class="grid-2">
         <div class="card">
-          <div class="card-head"><div><div class="card-title">최근 공지</div><div class="card-desc">운영진이 등록한 안내사항입니다.</div></div></div>
+          <div class="card-head"><div><div class="card-title">최근 공지</div></div></div>
           <div id="recent-notices"></div>
         </div>
         <div class="card">
-          <div class="card-head"><div><div class="card-title">최근 제출 현황</div><div class="card-desc">소모임 전체의 최근 제출 로그입니다.</div></div></div>
+          <div class="card-head"><div><div class="card-title">최근 제출 현황</div></div></div>
           <div id="recent-submissions"></div>
         </div>
       </div>
@@ -557,6 +557,15 @@ function applyMode(){
     if(activeAdminPage) showPage('dashboard');
   }
 }
+function getDisplayNameForGreeting(){
+  const user = currentUser;
+  const email = String(user?.email || '').trim();
+  return String(user?.displayName || '').trim() || (email ? email.split('@')[0] : '사용자');
+}
+function getDashboardGreeting(){
+  return `안녕하세요, ${getDisplayNameForGreeting()}님! 🎈`;
+}
+
 function showPage(page){
   if((currentMode==='member' || !isAdmin()) && ['admin','members'].includes(page)){
     toast('운영진 계정만 접근할 수 있습니다.','info');
@@ -565,7 +574,7 @@ function showPage(page){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   $('page-'+page).classList.add('active');
-  const titles={dashboard:['Main 대시보드','이번 주 과제와 전체 소모임 제출 현황을 한눈에 확인합니다.'],assignments:['주차별 과제 목록','참여자는 과제 등록 없이 주차별 과제를 확인하고 제출만 진행합니다.'],submit:['과제 상세 및 제출','텍스트 메모, 개인 파일, 캡쳐 이미지를 제출합니다. GitHub 링크는 선택입니다.'],my:['나의 제출 현황','내가 제출한 과제와 진행률을 확인합니다.'],admin:['운영진 관리 대시보드','전체 참여율, 제출률, 미제출자, 최근 제출 현황을 관리합니다.'],members:['멤버 관리','소모임 참여자와 운영진 권한을 관리합니다.'],notices:['공지사항','소모임 안내와 과제 관련 공지를 관리합니다.'],talk:['대화방','건의사항, 아이디어, 느낀점을 자유롭게 공유합니다.']};
+  const titles={dashboard:[getDashboardGreeting(),''],assignments:['주차별 과제 목록','참여자는 과제 등록 없이 주차별 과제를 확인하고 제출만 진행합니다.'],submit:['과제 상세 및 제출','텍스트 메모, 개인 파일, 캡쳐 이미지를 제출합니다. GitHub 링크는 선택입니다.'],my:['나의 제출 현황','내가 제출한 과제와 진행률을 확인합니다.'],admin:['운영진 관리 대시보드','전체 참여율, 제출률, 미제출자, 최근 제출 현황을 관리합니다.'],members:['멤버 관리','소모임 참여자와 운영진 권한을 관리합니다.'],notices:['공지사항','소모임 안내와 과제 관련 공지를 관리합니다.'],talk:['대화방','건의사항, 아이디어, 느낀점을 자유롭게 공유합니다.']};
   $('page-title').textContent=titles[page][0]; $('page-subtitle').textContent=titles[page][1];
   applyMode();
 }
@@ -928,6 +937,13 @@ function updateLoginProfile(){
       avatar.style.backgroundImage = '';
       avatar.textContent = (name || email || 'U').slice(0,1).toUpperCase();
     }
+  }
+  const dashboardPage = document.getElementById('page-dashboard');
+  if(dashboardPage?.classList.contains('active')){
+    const pageTitle = document.getElementById('page-title');
+    const pageSubtitle = document.getElementById('page-subtitle');
+    if(pageTitle) pageTitle.textContent = getDashboardGreeting();
+    if(pageSubtitle) pageSubtitle.textContent = '';
   }
 
   const roleEl = $('sidebar-role-pill');
