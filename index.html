@@ -143,7 +143,7 @@ body.admin-mode .admin-only{display:revert}
       <span class="role-pill" id="sidebar-role-pill">계정 확인 중</span><div style="margin-top:10px"><button class="btn btn-sm" id="btn-logout" style="width:100%;justify-content:center">로그아웃</button></div>
     </div>
     <nav class="nav">
-      <button class="nav-item active" data-page="dashboard">🏠 <span class="nav-label">참여자 대시보드</span></button>
+      <button class="nav-item active" data-page="dashboard">🏠 <span class="nav-label">Main 대시보드</span></button>
       <button class="nav-item" data-page="assignments">📚 <span class="nav-label">주차별 과제</span></button>
       <button class="nav-item" data-page="submit">📝 <span class="nav-label">과제 제출</span></button>
       <button class="nav-item" data-page="my">✅ <span class="nav-label">나의 제출 현황</span></button>
@@ -299,7 +299,7 @@ body.admin-mode .admin-only{display:revert}
 
     <section class="page" id="page-notices">
       <div class="card admin-only">
-        <div class="card-head"><div><div class="card-title">공지 등록</div><div class="card-desc">참여자 대시보드의 최근 공지에 함께 표시됩니다.</div></div></div>
+        <div class="card-head"><div><div class="card-title">공지 등록</div><div class="card-desc">Main 대시보드의 최근 공지에 함께 표시됩니다.</div></div></div>
         <div class="field"><label>제목 *</label><input id="n-title" placeholder="예: 3주차 과제 제출 안내"></div>
         <div class="field" style="margin-top:12px"><label>내용</label><textarea id="n-content" placeholder="공지 내용을 입력하세요."></textarea></div>
         <div style="margin-top:12px"><button class="btn btn-primary" id="btn-add-notice">공지 저장</button></div>
@@ -386,7 +386,7 @@ function resourceLink(url,label='열기',download=false){
 function renderAssignmentResources(a){
   const guideName=a.guideName||((a.guideUrl||'').split('/').pop()||'과제 안내 HTML');
   const files=parsePracticeFiles(a.practiceFiles);
-  const guide=a.guideUrl?`<div class="resource-box"><div class="resource-title">📄 과제 안내 HTML</div><div class="resource-item"><div><div class="resource-name">${esc(guideName)}</div><div class="link-muted">${esc(a.guideUrl)}</div></div><div style="display:flex;gap:6px;flex-shrink:0">${resourceLink(a.guideUrl,'열기')}${resourceLink(a.guideUrl,'다운로드',true)}</div></div><div class="resource-hint">file:/// 경로는 등록한 PC에서만 열릴 수 있습니다. 참여자가 다른 노트북에서 보려면 Firebase Storage 같은 온라인 저장소 URL로 등록해야 합니다.</div></div>`:'';
+  const guide=a.guideUrl?`<div class="resource-box"><div class="resource-title">📄 과제 안내 HTML</div><div class="resource-item"><div><div class="resource-name">${esc(guideName)}</div><div class="link-muted">${esc(a.guideUrl)}</div></div><div style="display:flex;gap:6px;flex-shrink:0">${resourceLink(a.guideUrl,'열기')}${resourceLink(a.guideUrl,'다운로드',true)}</div></div></div>`:'';
   const practice=files.length?`<div class="resource-box"><div class="resource-title">📦 실습파일</div><div class="resource-list">${files.map(f=>`<div class="resource-item"><div><div class="resource-name">${esc(f.name)}</div><div class="link-muted">${esc(f.url)}</div></div><div style="flex-shrink:0">${resourceLink(f.url,'다운로드',true)}</div></div>`).join('')}</div></div>`:'';
   return guide+practice;
 }
@@ -897,7 +897,7 @@ $('btn-logout').onclick=()=>{ if(auth) auth.signOut(); currentUser=null; current
 
 initGoogleAuth();
 rotateMotivationQuote();
-setInterval(rotateMotivationQuote, 60000);
+setInterval(rotateMotivationQuote, 120000);
 </script>
 </body>
 </html>
