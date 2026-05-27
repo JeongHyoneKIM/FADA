@@ -657,14 +657,22 @@ function renderMembers(){
 function renderNotices(){
   $('notice-list').innerHTML=notices().map(n=>`<div class="notice-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><strong>${esc(n.title)}</strong><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn btn-sm admin-only" onclick="startEditNotice('${n.id}')">수정</button><button class="btn btn-sm btn-danger admin-only" onclick="deleteNotice('${n.id}')">삭제</button></div></div><div class="notice-body">${esc(n.content)}</div><div class="helper">${fmtDate(n.updatedAt||n.createdAt)}</div></div>`).join('')||'<div class="empty">등록된 공지사항이 없습니다.</div>';
 }
+function canManageTalk(c){
+  if(isAdmin()) return true;
+  if(!currentUser || !c) return false;
+  const loginEmail = String(currentUser.email || '').toLowerCase();
+  const loginUid = String(currentUser.uid || '');
+  const ownerEmail = String(c.ownerEmail || c.authorEmail || '').toLowerCase();
+  const ownerUid = String(c.ownerUid || c.uid || '');
+  const ownerMemberId = String(c.ownerMemberId || c.memberId || '');
+  return (ownerEmail && ownerEmail === loginEmail) || (ownerUid && ownerUid === loginUid) || (ownerMemberId && ownerMemberId === myId());
+}
 function renderTalk(){
   const items=chats();
   $('talk-list').innerHTML=items.map(c=>{
-    const ownerEmail=String(c.ownerEmail||c.authorEmail||'').toLowerCase();
-    const mine=currentUser && ownerEmail===String(currentUser.email||'').toLowerCase();
-    const canManage=isAdmin()||mine;
+    const canManage=canManageTalk(c);
     const author=c.anonymous?'익명':(c.authorName||'멤버');
-    return `<div class="talk-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="talk-category">${esc(c.category||'💬 이야기')}</span>${canManage?`<div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="startEditTalk('${c.id}')">수정</button><button class="icon-btn" title="삭제" onclick="deleteTalk('${c.id}')">✕</button></div>`:''}</div><div class="talk-title">${esc(c.title)}</div><div class="talk-content">${esc(c.content)}</div><div class="talk-foot"><span>${esc(author)}</span><span class="mono">${fmtDate(c.updatedAt||c.createdAt)}</span></div></div>`;
+    return `<div class="talk-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><span class="talk-category">${esc(c.category||'💬 이야기')}</span>${canManage?`<div style="display:flex;gap:6px"><button class="btn btn-sm" data-edit-talk-id="${esc(c.id)}">수정</button><button class="icon-btn" title="삭제" data-delete-talk-id="${esc(c.id)}">✕</button></div>`:''}</div><div class="talk-title">${esc(c.title)}</div><div class="talk-content">${esc(c.content)}</div><div class="talk-foot"><span>${esc(author)}</span><span class="mono">${fmtDate(c.updatedAt||c.createdAt)}</span></div></div>`;
   }).join('')||'<div class="empty" style="grid-column:1/-1">아직 등록된 대화가 없습니다. 첫 글을 남겨보세요.</div>';
 }
 function selectAssignmentAndSubmit(id){showPage('submit');setTimeout(()=>{$('submit-assignment').value=id;renderAssignmentDetail()},0)}
@@ -821,21 +829,36 @@ $('btn-add-talk').onclick=async()=>{
   const id=editingTalkId || 'c_'+now;
   const prev=editingTalkId ? (state.chats[editingTalkId]||{}) : {};
   const ownerEmail=prev.ownerEmail || prev.authorEmail || (currentUser?.email||'');
+  const ownerUid=prev.ownerUid || prev.uid || (currentUser?.uid||'');
   const ownerMemberId=prev.ownerMemberId || prev.memberId || myId();
   const anonymous=$('talk-anonymous').checked;
-  await fbSet('chats/'+id,{...prev,id,category:$('talk-category').value,title,content,anonymous,authorName:anonymous?'익명':(currentUser?.displayName||prev.authorName||'멤버'),authorEmail:anonymous?'':(currentUser?.email||prev.authorEmail||''),ownerEmail,memberId:anonymous?'':ownerMemberId,ownerMemberId,createdAt:prev.createdAt||now,updatedAt:now});
+  await fbSet('chats/'+id,{...prev,id,category:$('talk-category').value,title,content,anonymous,authorName:anonymous?'익명':(currentUser?.displayName||prev.authorName||'멤버'),authorEmail:anonymous?'':(currentUser?.email||prev.authorEmail||''),ownerEmail,ownerUid,memberId:anonymous?'':ownerMemberId,ownerMemberId,createdAt:prev.createdAt||now,updatedAt:now});
   const wasEditing=!!editingTalkId;
   resetTalkForm(); $('talk-write-panel').classList.remove('show');
   toast(wasEditing?'대화방 글이 수정되었습니다':'대화방 글이 등록되었습니다','success'); poll();
 }
 async function deleteTalk(id){
   const c=state.chats[id];
-  const ownerEmail=String(c?.ownerEmail||c?.authorEmail||'').toLowerCase();
-  const mine=currentUser && ownerEmail===String(currentUser.email||'').toLowerCase();
-  if(!isAdmin()&&!mine){toast('본인이 작성한 글만 삭제할 수 있습니다','error');return}
+  if(!c){toast('삭제할 글을 찾을 수 없습니다','error'); return;}
+  if(!canManageTalk(c)){toast('본인이 작성한 글만 삭제할 수 있습니다','error');return}
   if(!confirm('이 글을 삭제할까요?'))return;
-  await fbDelete('chats/'+id); toast('대화방 글이 삭제되었습니다','info'); poll()
+  try{
+    await fbDelete('chats/'+id);
+    delete state.chats[id];
+    renderTalk();
+    toast('대화방 글이 삭제되었습니다','info');
+    poll();
+  }catch(e){
+    toast('삭제 실패: '+(e.message||e),'error');
+  }
 }
+
+document.addEventListener('click', (e)=>{
+  const delBtn = e.target.closest('[data-delete-talk-id]');
+  if(delBtn){ e.preventDefault(); deleteTalk(delBtn.dataset.deleteTalkId); return; }
+  const editBtn = e.target.closest('[data-edit-talk-id]');
+  if(editBtn){ e.preventDefault(); startEditTalk(editBtn.dataset.editTalkId); }
+});
 
 const MOTIVATION_QUOTES = [
   "작은 실천이 쌓이면 일하는 방식이 바뀝니다.",
