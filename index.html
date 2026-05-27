@@ -82,6 +82,14 @@ body.admin-mode .admin-only{display:revert}
 .resource-hint{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5}
 .link-muted{font-size:12px;color:var(--muted);word-break:break-all}
 
+.auth-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#f8fbff 0%,#f6f4ff 55%,#fff8fb 100%);display:flex;align-items:center;justify-content:center;z-index:1400;padding:20px}
+.auth-card{width:460px;max-width:94vw;background:#fff;border:1px solid var(--line);border-radius:28px;padding:32px;box-shadow:var(--shadow);text-align:left}
+.auth-card h2{font-size:24px;letter-spacing:-.03em;margin-bottom:8px}.auth-card p{color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:18px}
+.auth-config-warning{display:none;margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--amber-bg);color:var(--amber);font-size:12px;line-height:1.6}
+.auth-config-warning.show{display:block}
+.login-profile{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:8px 10px}
+.login-profile img{width:32px;height:32px;border-radius:50%}
+
 </style>
 </head>
 <body class="member-mode">
@@ -105,6 +113,17 @@ body.admin-mode .admin-only{display:revert}
   </div>
 </div>
 
+
+<div id="auth-overlay" class="auth-overlay">
+  <div class="auth-card">
+    <div class="setup-badge">🔐 Google Login</div>
+    <h2>AI 소모임 플랫폼 로그인</h2>
+    <p>Google 계정으로 로그인하면 대시보드에 접속할 수 있습니다.<br><b>vdk7458@gmail.com</b> 계정만 운영진 모드가 열리고, 나머지 계정은 참여자 모드로 접속합니다.</p>
+    <button class="btn btn-primary" id="btn-google-login" style="width:100%;justify-content:center">Google 계정으로 로그인</button>
+    <div id="auth-config-warning" class="auth-config-warning">Firebase Google 로그인 설정이 적용되었습니다.</div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toast-wrap"></div>
 
 <div class="app">
@@ -121,7 +140,7 @@ body.admin-mode .admin-only{display:revert}
           <div class="profile-mail">admin@study.local</div>
         </div>
       </div>
-      <span class="role-pill">운영진 · 참여자 겸용</span>
+      <span class="role-pill" id="sidebar-role-pill">로그인 대기</span><div style="margin-top:10px"><button class="btn btn-sm" id="btn-logout" style="width:100%;justify-content:center">로그아웃</button></div>
     </div>
     <nav class="nav">
       <button class="nav-item active" data-page="dashboard">🏠 <span class="nav-label">참여자 대시보드</span></button>
@@ -290,22 +309,39 @@ body.admin-mode .admin-only{display:revert}
   </main>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+
 <script>
 let DB_URL = '';
-// ✅ 여기에 Firebase Realtime Database URL을 고정하세요.
-// 예: const FIXED_FIREBASE_DATABASE_URL = 'https://your-project-default-rtdb.firebaseio.com/';
-// URL을 넣고 GitHub Pages에 업로드하면 참여자는 Firebase URL을 입력하지 않아도 됩니다.
+// ✅ Firebase 고정 설정
 const FIXED_FIREBASE_DATABASE_URL = 'https://aiproject-b8d0f-default-rtdb.firebaseio.com/';
 const FIXED_FIREBASE_STORAGE_BUCKET = 'aiproject-b8d0f.firebasestorage.app';
+
+// ✅ Google 로그인 권한 정책
+const ADMIN_EMAIL = 'vdk7458@gmail.com';
+
+// ✅ Firebase Console → 프로젝트 설정 → 내 앱(웹) → SDK 설정 및 구성에서 복사하세요.
+// apiKey는 반드시 실제 값으로 교체해야 Google 로그인이 동작합니다.
+const FIREBASE_WEB_CONFIG = {
+  apiKey: 'AIzaSyCAEs44KRqsXXRlu2kXCimg1HyoHprrYgQ',
+  authDomain: 'aiproject-b8d0f.firebaseapp.com',
+  databaseURL: FIXED_FIREBASE_DATABASE_URL,
+  projectId: 'aiproject-b8d0f',
+  storageBucket: FIXED_FIREBASE_STORAGE_BUCKET
+};
+
 let demoMode = false;
 let pollTimer = null;
 let currentMode = 'member';
-const CURRENT_USER_ID = 'me_admin';
+let auth = null;
+let currentUser = null;
+let currentMemberId = null;
 const state = { members:{}, assignments:{}, submissions:{}, notices:{} };
 
 const sample = {
   members:{
-    me_admin:{id:'me_admin',name:'김정현',email:'admin@study.local',department:'FA기술담당',role:'admin',joinedAt:Date.now()-100000},
+    me_admin:{id:'me_admin',name:'김정현',email:'vdk7458@gmail.com',department:'FA기술담당',role:'admin',joinedAt:Date.now()-100000},
     m_1:{id:'m_1',name:'박서연',email:'seoyeon@study.local',department:'물류설비',role:'member',joinedAt:Date.now()-90000},
     m_2:{id:'m_2',name:'이도윤',email:'doyoon@study.local',department:'자동화',role:'member',joinedAt:Date.now()-80000},
     m_3:{id:'m_3',name:'최민지',email:'minji@study.local',department:'설비기술',role:'member',joinedAt:Date.now()-70000}
@@ -362,7 +398,10 @@ function latestAssignment(){const a=assignments(); return a[a.length-1]||null}
 function getSub(memberId, assignmentId){return submissions().find(s=>s.memberId===memberId&&s.assignmentId===assignmentId&&s.status!=='draft')}
 function getSubmissionAny(memberId, assignmentId){return submissions().find(s=>s.memberId===memberId&&s.assignmentId===assignmentId)}
 function rateClass(n){return n>=80?'green':n>=40?'amber':'blue'}
-function myId(){return CURRENT_USER_ID}
+function myId(){return currentMemberId || (currentUser && currentUser.uid) || 'guest'}
+function isAdmin(){return !!(currentUser && String(currentUser.email||'').toLowerCase()===ADMIN_EMAIL.toLowerCase())}
+async function getAuthToken(){return currentUser ? await currentUser.getIdToken() : ''}
+async function withAuthUrl(url){const token=await getAuthToken(); return token ? url + (url.includes('?')?'&':'?') + 'auth=' + encodeURIComponent(token) : url}
 function calc(){
   const ms=members(), as=assignments(), ss=submissions().filter(s=>s.status!=='draft');
   const totalSlots=ms.length*as.length;
@@ -377,9 +416,9 @@ function calc(){
   const myRate=as.length?Math.round(myDone/as.length*100):0;
   return {ms,as,ss,totalRate,participation,cur,weekRate,missing,myDone,myRate};
 }
-async function fbGet(path=''){const res=await fetch(DB_URL+path+'.json'); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
-async function fbSet(path,data){ if(demoMode){setLocal(path,data); renderAll(); return data} const res=await fetch(DB_URL+path+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
-async function fbDelete(path){ if(demoMode){deleteLocal(path); renderAll(); return} const res=await fetch(DB_URL+path+'.json',{method:'DELETE'}); if(!res.ok)throw new Error('HTTP '+res.status)}
+async function fbGet(path=''){const res=await fetch(await withAuthUrl(DB_URL+path+'.json')); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
+async function fbSet(path,data){ if(demoMode){setLocal(path,data); renderAll(); return data} const res=await fetch(await withAuthUrl(DB_URL+path+'.json'),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); if(!res.ok)throw new Error('HTTP '+res.status); return res.json()}
+async function fbDelete(path){ if(demoMode){deleteLocal(path); renderAll(); return} const res=await fetch(await withAuthUrl(DB_URL+path+'.json'),{method:'DELETE'}); if(!res.ok)throw new Error('HTTP '+res.status)}
 
 function safeFileName(name){
   return String(name || 'file').replace(/[\/:*?"<>|#%{}\^~[\]`]/g,'_');
@@ -401,7 +440,10 @@ async function uploadOneFile(file, type, meta={}){
   if(!file) return null;
   const path = storagePath(type, file.name, meta);
   const url = `https://firebasestorage.googleapis.com/v0/b/${FIXED_FIREBASE_STORAGE_BUCKET}/o?uploadType=media&name=${encodeURIComponent(path)}`;
-  const res = await fetch(url, { method:'POST', headers:{ 'Content-Type': file.type || 'application/octet-stream' }, body:file });
+  const token = await getAuthToken();
+  const headers = { 'Content-Type': file.type || 'application/octet-stream' };
+  if(token) headers.Authorization = 'Bearer ' + token;
+  const res = await fetch(url, { method:'POST', headers, body:file });
   if(!res.ok){
     const msg = await res.text().catch(()=>res.statusText);
     throw new Error(`Storage 업로드 실패: ${file.name} (${res.status}) ${msg}`);
@@ -435,7 +477,7 @@ async function poll(){
 }
 function ensureMe(){
   if(!state.members[CURRENT_USER_ID]){
-    state.members[CURRENT_USER_ID]={id:CURRENT_USER_ID,name:'김정현',email:'admin@study.local',department:'FA기술담당',role:'admin',joinedAt:Date.now()};
+    state.members[CURRENT_USER_ID]={id:CURRENT_USER_ID,name:'김정현',email:'vdk7458@gmail.com',department:'FA기술담당',role:'admin',joinedAt:Date.now()};
     if(DB_URL&&!demoMode) fbSet('members/'+CURRENT_USER_ID,state.members[CURRENT_USER_ID]).catch(()=>{});
   }
 }
@@ -445,18 +487,20 @@ function hideSetup(){ $('setup-overlay').style.display='none'} function showSetu
 
 document.querySelectorAll('.nav-item').forEach(btn=>btn.addEventListener('click',()=>showPage(btn.dataset.page)));
 function applyMode(){
+  if(currentMode==='admin' && !isAdmin()) currentMode='member';
   document.body.classList.toggle('member-mode', currentMode==='member');
   document.body.classList.toggle('admin-mode', currentMode==='admin');
   $('mode-member').classList.toggle('active', currentMode==='member');
   $('mode-admin').classList.toggle('active', currentMode==='admin');
+  $('mode-admin').style.display = isAdmin() ? '' : 'none';
   if(currentMode==='member'){
     const activeAdminPage = ['admin','members'].some(page => $('page-'+page)?.classList.contains('active'));
     if(activeAdminPage) showPage('dashboard');
   }
 }
 function showPage(page){
-  if(currentMode==='member' && ['admin','members'].includes(page)){
-    toast('참여자 모드에서는 운영진 화면에 접근하지 않습니다. 운영진 모드로 전환해주세요.','info');
+  if((currentMode==='member' || !isAdmin()) && ['admin','members'].includes(page)){
+    toast('운영진 계정만 접근할 수 있습니다.','info');
     page='dashboard';
   }
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
@@ -467,7 +511,7 @@ function showPage(page){
   applyMode();
 }
 $('mode-member').onclick=()=>{currentMode='member';applyMode();showPage('dashboard')}
-$('mode-admin').onclick=()=>{currentMode='admin';applyMode();showPage('admin')}
+$('mode-admin').onclick=()=>{if(!isAdmin()){toast('운영진 계정만 사용할 수 있습니다','error');return} currentMode='admin';applyMode();showPage('admin')}
 function normalizedFixedUrl(){
   const url = (FIXED_FIREBASE_DATABASE_URL || '').trim();
   if(!url || url === 'PASTE_YOUR_FIREBASE_DATABASE_URL_HERE') return '';
@@ -502,7 +546,7 @@ function renderDashboard(){
       <div class="assignment-meta"><span>🛠 ${esc(c.cur.tool||'도구 미정')}</span><span>⏰ ${dueText(c.cur.due)}</span><span>📄 안내 HTML</span><span>📦 실습파일</span><span>📎 제출파일</span><span>🖼 캡쳐 이미지</span></div>${renderAssignmentResources(c.cur)}
       <button class="btn btn-primary" onclick="showPage('submit')">바로 제출하기</button></div>`;
   }
-  $('my-progress').innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:10px"><strong>김정현님의 진행률</strong><span class="mono">${c.myDone}/${c.as.length}개</span></div><div class="progress"><div class="bar ${rateClass(c.myRate)}" style="width:${c.myRate}%"></div></div><div class="helper" style="margin-top:12px">현재 계정은 admin 권한이지만 참여자 과제 제출 대상에도 포함됩니다.</div><div class="check-list" style="margin-top:14px">${c.as.slice(-4).reverse().map(a=>`<div class="check-item"><div class="check-icon">${getSub(myId(),a.id)?'✓':'!'}</div><div><strong>${esc(a.week||'')} ${esc(a.title)}</strong><div class="helper">${getSub(myId(),a.id)?'제출 완료':'아직 제출하지 않았습니다.'}</div></div></div>`).join('')||'<div class="empty">과제가 없습니다.</div>'}</div>`;
+  $('my-progress').innerHTML=`<div style="display:flex;justify-content:space-between;margin-bottom:10px"><strong>${esc((state.members[myId()]&&state.members[myId()].name)||'나')}님의 진행률</strong><span class="mono">${c.myDone}/${c.as.length}개</span></div><div class="progress"><div class="bar ${rateClass(c.myRate)}" style="width:${c.myRate}%"></div></div><div class="helper" style="margin-top:12px">현재 계정은 admin 권한이지만 참여자 과제 제출 대상에도 포함됩니다.</div><div class="check-list" style="margin-top:14px">${c.as.slice(-4).reverse().map(a=>`<div class="check-item"><div class="check-icon">${getSub(myId(),a.id)?'✓':'!'}</div><div><strong>${esc(a.week||'')} ${esc(a.title)}</strong><div class="helper">${getSub(myId(),a.id)?'제출 완료':'아직 제출하지 않았습니다.'}</div></div></div>`).join('')||'<div class="empty">과제가 없습니다.</div>'}</div>`;
   $('recent-notices').innerHTML=notices().slice(0,3).map(n=>`<div class="notice-card"><strong>${esc(n.title)}</strong><div class="notice-body">${esc(n.content)}</div><div class="helper">${fmtDate(n.createdAt)}</div></div>`).join('')||'<div class="empty">공지사항이 없습니다.</div>';
   $('recent-submissions').innerHTML=submissions().slice(0,5).map(s=>`<div class="check-item"><div class="check-icon">✓</div><div><strong>${memberName(s.memberId)}</strong><div class="helper">${assignmentTitle(s.assignmentId)} · ${fmtDate(s.submittedAt)}</div></div></div>`).join('')||'<div class="empty">제출 내역이 없습니다.</div>';
 }
@@ -631,26 +675,67 @@ function resetMemberForm(){
   $('btn-cancel-member-edit').style.display='none';
 }
 async function toggleRole(id){const m=state.members[id]; if(!m)return; m.role=m.role==='admin'?'member':'admin'; await fbSet('members/'+id,m); toast('권한이 변경되었습니다','success'); poll()}
-async function deleteMember(id){if(id===CURRENT_USER_ID){toast('현재 운영진 계정은 삭제할 수 없습니다','error');return} if(!confirm('멤버와 제출 내역을 삭제할까요?'))return; await fbDelete('members/'+id); for(const s of submissions().filter(s=>s.memberId===id)) await fbDelete('submissions/'+s.id); toast('멤버가 삭제되었습니다','info'); poll()}
+async function deleteMember(id){if(id===myId()){toast('현재 로그인한 계정은 삭제할 수 없습니다','error');return} if(!confirm('멤버와 제출 내역을 삭제할까요?'))return; await fbDelete('members/'+id); for(const s of submissions().filter(s=>s.memberId===id)) await fbDelete('submissions/'+s.id); toast('멤버가 삭제되었습니다','info'); poll()}
 $('btn-add-notice').onclick=async()=>{const title=$('n-title').value.trim(); if(!title){toast('공지 제목을 입력해주세요','error');return} const id='n_'+Date.now(); await fbSet('notices/'+id,{id,title,content:$('n-content').value.trim(),createdAt:Date.now()}); $('n-title').value='';$('n-content').value='';toast('공지사항이 저장되었습니다','success');poll()}
 async function deleteNotice(id){await fbDelete('notices/'+id);toast('공지가 삭제되었습니다','info');poll()}
 
-const fixedUrl = normalizedFixedUrl();
-const saved=localStorage.getItem('study_dashboard_firebase_url');
-if(fixedUrl){
-  DB_URL=fixedUrl;
-  $('fb-url-input').value=fixedUrl;
-  localStorage.setItem('study_dashboard_firebase_url', fixedUrl);
-  hideSetup();
-  startPolling();
-} else if(saved){
-  DB_URL=saved;
-  $('fb-url-input').value=saved;
-  hideSetup();
-  startPolling();
-} else {
-  showSetup();
+function isFirebaseConfigReady(){
+  return FIREBASE_WEB_CONFIG.apiKey && !FIREBASE_WEB_CONFIG.apiKey.includes('PASTE_');
 }
+function updateLoginProfile(){
+  const m = state.members[myId()] || {};
+  const name = currentUser?.displayName || m.name || '사용자';
+  const email = currentUser?.email || m.email || '';
+  document.querySelector('.profile-name').textContent = name;
+  document.querySelector('.profile-mail').textContent = email;
+  document.querySelector('.avatar').textContent = (name||email||'U').slice(0,1);
+  $('sidebar-role-pill').textContent = isAdmin() ? '운영진 · 참여자 겸용' : '참여자';
+}
+function showAuthOverlay(){ $('auth-overlay').style.display='flex'; }
+function hideAuthOverlay(){ $('auth-overlay').style.display='none'; }
+async function startAppAfterLogin(user){
+  currentUser = user;
+  hideAuthOverlay();
+  currentMode = isAdmin() ? 'admin' : 'member';
+  const fixedUrl = normalizedFixedUrl();
+  const saved=localStorage.getItem('study_dashboard_firebase_url');
+  if(fixedUrl){
+    DB_URL=fixedUrl;
+    $('fb-url-input').value=fixedUrl;
+    localStorage.setItem('study_dashboard_firebase_url', fixedUrl);
+    hideSetup();
+    startPolling();
+  } else if(saved){
+    DB_URL=saved;
+    $('fb-url-input').value=saved;
+    hideSetup();
+    startPolling();
+  } else {
+    showSetup();
+  }
+  applyMode();
+}
+function initGoogleAuth(){
+  if(!isFirebaseConfigReady()){
+    $('auth-config-warning').classList.add('show');
+    return;
+  }
+  firebase.initializeApp(FIREBASE_WEB_CONFIG);
+  auth = firebase.auth();
+  auth.onAuthStateChanged(user=>{
+    if(user) startAppAfterLogin(user);
+    else { currentUser=null; currentMemberId=null; showAuthOverlay(); }
+  });
+}
+$('btn-google-login').onclick=async()=>{
+  if(!auth){toast('Firebase 웹 앱 설정값을 먼저 입력해주세요','error'); return;}
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try{ await auth.signInWithPopup(provider); }
+  catch(e){ toast(e.message || 'Google 로그인 실패', 'error'); }
+};
+$('btn-logout').onclick=()=>{ if(auth) auth.signOut(); };
+
+initGoogleAuth();
 </script>
 </body>
 </html>
