@@ -332,8 +332,27 @@ const renderMy = () => {
 };
 
 // ══════════════════════════════════════════════
-//  ✅ 전체 제출 현황 (참여자도 열람 가능, 파일 다운 포함)
+//  ✅ 전체 제출 현황 — 주차별 토글(accordion)
+//     - 모든 로그인 사용자가 파일 열람·다운 가능
+//     - 토글 열기/닫기 상태를 유지하며 재렌더 시 복원
 // ══════════════════════════════════════════════
+
+/** 토글 열림 상태 유지용 (assignmentId → boolean) */
+const _submissionToggleOpen = {};
+
+/** 토글 헤더 클릭 핸들러 — window에 노출하여 onclick에서 호출 */
+window.toggleSubmissionPanel = (id) => {
+  _submissionToggleOpen[id] = !_submissionToggleOpen[id];
+  const panel = document.getElementById('sub-panel-' + id);
+  const arrow  = document.getElementById('sub-arrow-' + id);
+  const bar    = document.getElementById('sub-bar-' + id);
+  if (!panel) return;
+  const open = _submissionToggleOpen[id];
+  panel.style.display  = open ? 'block' : 'none';
+  arrow.textContent    = open ? '▲' : '▼';
+  bar.style.opacity    = open ? '0' : '1';   // 열리면 프로그레스 바 숨김 (내부에 다시 표시)
+};
+
 const renderAllSubmissions = () => {
   const container = document.getElementById('all-submissions-content');
   if (!container) return;
@@ -344,56 +363,105 @@ const renderAllSubmissions = () => {
     return;
   }
 
-  // 과제별로 그룹화하여 표시
-  container.innerHTML = as.map(a => {
-    const subs = getSubmissions().filter(s => s.assignmentId === a.id && s.status !== 'draft');
+  container.innerHTML = as.map((a, idx) => {
+    const subs        = getSubmissions().filter(s => s.assignmentId === a.id && s.status !== 'draft');
+    const allMembers  = getMembers();
     const submittedIds = new Set(subs.map(s => s.memberId));
-    const allMembers = getMembers();
-    const rate = allMembers.length ? Math.round(subs.length / allMembers.length * 100) : 0;
+    const missing     = allMembers.filter(m => !submittedIds.has(m.id));
+    const rate        = allMembers.length ? Math.round(subs.length / allMembers.length * 100) : 0;
+
+    if (_submissionToggleOpen[a.id] === undefined) _submissionToggleOpen[a.id] = false;
+    const open = _submissionToggleOpen[a.id];
+
+    // 제출 상태 뱃지 색상
+    const statusBadge = (s) => s.status === 'late'
+      ? '<span class="badge badge-red">지각</span>'
+      : '<span class="badge badge-done">완료</span>';
+
+    // 멤버 카드 그리드 (제출자 목록)
+    const memberCards = allMembers.map(m => {
+      const s = subs.find(s => s.memberId === m.id);
+      if (s) {
+        // 제출 완료 카드
+        return `
+          <div class="sub-member-card sub-member-done">
+            <div class="sub-member-header">
+              <div class="sub-member-avatar">${esc(m.name.slice(0,1))}</div>
+              <div>
+                <div class="sub-member-name">${esc(m.name)}</div>
+                <div class="helper">${esc(m.department || '')}</div>
+              </div>
+              ${statusBadge(s)}
+            </div>
+            ${s.memo ? `<div class="sub-memo">${esc(s.memo)}</div>` : ''}
+            <div class="sub-file-row">
+              ${s.githubUrl ? `<a class="btn btn-sm" href="${esc(s.githubUrl)}" target="_blank">🔗 GitHub</a>` : ''}
+              ${(s.files||[]).map(f => `<button class="btn btn-sm" onclick="forceDownload('${escAttr(f.url)}','${escAttr(f.name)}')">📎 ${esc(f.name)}</button>`).join('')}
+              ${(s.images||[]).map(f => `<button class="btn btn-sm" onclick="forceDownload('${escAttr(f.url)}','${escAttr(f.name)}')">🖼 ${esc(f.name)}</button>`).join('')}
+              ${!s.githubUrl && !(s.files||[]).length && !(s.images||[]).length ? '<span class="helper">첨부 없음</span>' : ''}
+            </div>
+            <div class="sub-date mono">${fmtDate(s.submittedAt)}</div>
+          </div>`;
+      } else {
+        // 미제출 카드
+        return `
+          <div class="sub-member-card sub-member-missing">
+            <div class="sub-member-header">
+              <div class="sub-member-avatar sub-avatar-missing">${esc(m.name.slice(0,1))}</div>
+              <div>
+                <div class="sub-member-name">${esc(m.name)}</div>
+                <div class="helper">${esc(m.department || '')}</div>
+              </div>
+              <span class="badge badge-warn">미제출</span>
+            </div>
+          </div>`;
+      }
+    }).join('');
 
     return `
-      <div style="margin-bottom:28px">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-          <span class="badge badge-brand">${esc(a.week || '')}</span>
-          <strong style="font-size:15px">${esc(a.title)}</strong>
-          <span class="badge badge-blue">${subs.length}/${allMembers.length}명 제출</span>
-          <span class="mono" style="font-size:12px;color:var(--muted)">${rate}%</span>
+      <!-- 주차 토글 블록 -->
+      <div class="sub-accordion">
+
+        <!-- 헤더 (클릭하면 토글) -->
+        <button class="sub-accordion-header" onclick="toggleSubmissionPanel('${esc(a.id)}')">
+          <div class="sub-accordion-left">
+            <span class="badge badge-brand">${esc(a.week || '')}</span>
+            <span class="sub-accordion-title">${esc(a.title)}</span>
+            <span class="badge ${rate === 100 ? 'badge-done' : rate >= 50 ? 'badge-blue' : 'badge-warn'}">${subs.length}/${allMembers.length}명</span>
+          </div>
+          <div class="sub-accordion-right">
+            <div id="sub-bar-${esc(a.id)}" class="sub-mini-bar-wrap" style="opacity:${open ? 0 : 1}">
+              <div class="sub-mini-bar">
+                <div class="sub-mini-bar-fill ${rateClass(rate)}" style="width:${rate}%"></div>
+              </div>
+              <span class="mono" style="font-size:11px;color:var(--muted);min-width:32px;text-align:right">${rate}%</span>
+            </div>
+            <span id="sub-arrow-${esc(a.id)}" class="sub-arrow">${open ? '▲' : '▼'}</span>
+          </div>
+        </button>
+
+        <!-- 패널 (열림/닫힘) -->
+        <div id="sub-panel-${esc(a.id)}" class="sub-accordion-panel" style="display:${open ? 'block' : 'none'}">
+
+          <!-- 패널 내 프로그레스 바 -->
+          <div class="sub-panel-progress">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px">
+              <span>제출률</span><span class="mono">${rate}%</span>
+            </div>
+            <div class="progress"><div class="bar ${rateClass(rate)}" style="width:${rate}%"></div></div>
+          </div>
+
+          <!-- 멤버 카드 그리드 -->
+          <div class="sub-member-grid">${memberCards}</div>
+
+          ${missing.length ? `
+            <div class="sub-missing-banner">
+              ⚠️ 미제출: ${missing.map(m => `<strong>${esc(m.name)}</strong>`).join(', ')}
+            </div>` : `
+            <div class="sub-all-done-banner">🎉 이번 주차는 모두 제출 완료!</div>`}
         </div>
-        <div class="progress" style="margin-bottom:14px">
-          <div class="bar ${rateClass(rate)}" style="width:${rate}%"></div>
-        </div>
-        ${subs.length ? `
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>이름</th><th>상태</th><th>메모</th>
-                  <th>파일 다운로드</th><th>이미지 다운로드</th><th>GitHub</th><th>제출일</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${subs.map(s => {
-                  const m = state.members[s.memberId];
-                  return `
-                    <tr>
-                      <td><strong>${esc(m?.name || '—')}</strong><div class="helper">${esc(m?.department || '')}</div></td>
-                      <td><span class="badge ${s.status === 'late' ? 'badge-red' : 'badge-done'}">${s.status === 'late' ? '지각' : '완료'}</span></td>
-                      <td style="max-width:200px;white-space:pre-wrap;font-size:12px;color:var(--muted)">${esc(s.memo || '—')}</td>
-                      <td>${downloadLinks(s.files) || '—'}</td>
-                      <td>${downloadLinks(s.images) || '—'}</td>
-                      <td>${s.githubUrl ? `<a class="btn btn-sm" href="${esc(s.githubUrl)}" target="_blank">열기</a>` : '—'}</td>
-                      <td class="mono">${fmtDate(s.submittedAt)}</td>
-                    </tr>`;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>` : '<div class="empty" style="padding:14px">아직 제출한 멤버가 없습니다.</div>'}
-        ${allMembers.filter(m => !submittedIds.has(m.id)).length ? `
-          <div style="margin-top:10px;padding:10px 14px;background:var(--amber-bg);border-radius:14px;font-size:12px;color:var(--amber)">
-            ⚠️ 미제출: ${allMembers.filter(m => !submittedIds.has(m.id)).map(m => esc(m.name)).join(', ')}
-          </div>` : ''}
       </div>`;
-  }).join('<hr style="border:none;border-top:1px solid var(--line);margin:8px 0 28px">');
+  }).join('');
 };
 
 // ── 운영진 대시보드 ───────────────────────────
